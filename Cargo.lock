@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "aucpace-conflux"
-version = "0.2.0-pre"
+version = "0.2.0"
 dependencies = [
  "bincode",
  "curve25519-dalek",
@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "spake2-conflux"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "bencher",
  "curve25519-dalek",
@@ -552,7 +552,7 @@ dependencies = [
 
 [[package]]
 name = "srp-conflux"
-version = "0.7.0-pre"
+version = "0.7.0"
 dependencies = [
  "digest",
  "generic-array",

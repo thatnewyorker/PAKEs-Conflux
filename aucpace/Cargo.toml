@@ -1,6 +1,6 @@
 [package]
 name = "aucpace-conflux"
-version = "0.2.0-pre"
+version = "0.2.0"
 authors = ["Gerard Cruzado <thatnewyorker@gmail.com>", "Sam Leonard <tritoke@protonmail.com>"]
 description = "AuCPace protocol implementation"
 documentation = "https://docs.rs/aucpace-conflux"
