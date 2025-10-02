@@ -1,7 +1,7 @@
 #![cfg(feature = "partial_augmentation")]
-use aucpace::client::{AuCPaceClientPreAug, AuCPaceClientRecvServerKey};
-use aucpace::server::{AuCPaceServerAugLayer, AuCPaceServerRecvClientKey};
-use aucpace::{
+use aucpace_conflux::client::{AuCPaceClientPreAug, AuCPaceClientRecvServerKey};
+use aucpace_conflux::server::{AuCPaceServerAugLayer, AuCPaceServerRecvClientKey};
+use aucpace_conflux::{
     Client, ClientMessage, Database, Error, PartialAugDatabase, Result, Server, ServerMessage,
 };
 use curve25519_dalek::{RistrettoPoint, Scalar};

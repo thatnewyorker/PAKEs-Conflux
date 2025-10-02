@@ -3,11 +3,11 @@
 #![doc = include_str!("../README.md")]
 
 //! # Usage
-//! Add `srp` dependency to your `Cargo.toml`:
+//! Add `srp-conflux` dependency to your `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
-//! srp = "0.6"
+//! srp-conflux = "0.6"
 //! ```
 //!
 //! Next read documentation for [`client`](client/index.html) and

@@ -1,4 +1,4 @@
-use aucpace::{Client, ClientMessage, Result, Server, ServerMessage, StrongDatabase};
+use aucpace_conflux::{Client, ClientMessage, Result, Server, ServerMessage, StrongDatabase};
 use curve25519_dalek::ristretto::RistrettoPoint;
 use curve25519_dalek::scalar::Scalar;
 use password_hash::ParamsString;

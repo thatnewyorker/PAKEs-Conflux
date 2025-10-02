@@ -1,4 +1,4 @@
-use aucpace::{
+use aucpace_conflux::{
     Client, ClientMessage, Database, Error, PartialAugDatabase, Result, Server, ServerMessage,
 };
 use curve25519_dalek::ristretto::RistrettoPoint;

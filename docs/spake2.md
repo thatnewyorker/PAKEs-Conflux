@@ -6,8 +6,8 @@ SPAKE2 is a balanced PAKE: both sides contribute a shared password and derive a 
 
 References:
 - Draft spec: https://tools.ietf.org/id/draft-irtf-cfrg-spake2-10.html
-- Crate docs: https://docs.rs/spake2
-- Crate on crates.io: https://crates.io/crates/spake2
+- Crate docs: https://docs.rs/spake2-conflux
+- Crate on crates.io: https://crates.io/crates/spake2-conflux
 
 ---
 
@@ -50,11 +50,11 @@ Messages:
 ## Features and crate setup
 
 Minimal setup in `Cargo.toml`:
-- Add `spake2` from crates.io.
+- Add `spake2-conflux` from crates.io.
 - Choose optional features if/when the crate exposes them (see docs.rs for up-to-date feature flags).
 
 Example dependency snippet (replace `x.y` with the desired version):
-- `spake2 = "x.y"`
+- `spake2-conflux = "x.y"`
 
 ---
 

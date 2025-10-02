@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "aucpace"
+name = "aucpace-conflux"
 version = "0.2.0-pre"
 dependencies = [
  "bincode",
@@ -528,7 +528,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "spake2"
+name = "spake2-conflux"
 version = "0.4.0"
 dependencies = [
  "bencher",
@@ -551,7 +551,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "srp"
+name = "srp-conflux"
 version = "0.7.0-pre"
 dependencies = [
  "digest",

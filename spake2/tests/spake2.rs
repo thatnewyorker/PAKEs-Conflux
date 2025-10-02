@@ -1,4 +1,4 @@
-use spake2::{Ed25519Group, Error, Identity, Password, Spake2};
+use spake2_conflux::{Ed25519Group, Error, Identity, Password, Spake2};
 
 #[test]
 fn test_basic() {

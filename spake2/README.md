@@ -98,10 +98,10 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/spake2.svg
-[crate-link]: https://crates.io/crates/spake2
-[docs-image]: https://docs.rs/spake2/badge.svg
-[docs-link]: https://docs.rs/spake2/
+[crate-image]: https://img.shields.io/crates/v/spake2-conflux.svg
+[crate-link]: https://crates.io/crates/spake2-conflux
+[docs-image]: https://docs.rs/spake2-conflux/badge.svg
+[docs-link]: https://docs.rs/spake2-conflux/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.60+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg

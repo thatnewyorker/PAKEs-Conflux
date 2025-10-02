@@ -1,9 +1,9 @@
 [package]
-name = "spake2"
+name = "spake2-conflux"
 version = "0.4.0"
 authors = ["Gerard Cruzado <thatnewyorker@gmail.com>", "Brian Warner <warner@lothar.com>"]
 description = "The SPAKE2 password-authenticated key-exchange algorithm."
-documentation = "https://docs.rs/spake2"
+documentation = "https://docs.rs/spake2-conflux"
 homepage = "https://github.com/thatnewyorker/PAKEs-Conflux/tree/master/spake2"
 repository = "https://github.com/thatnewyorker/PAKEs-Conflux"
 license = "MIT OR Apache-2.0"
@@ -13,6 +13,10 @@ exclude = [".gitignore"]
 readme = "README.md"
 edition = "2024"
 rust-version = "1.90"
+
+[lib]
+name = "spake2_conflux"
+
 
 [dependencies]
 curve25519-dalek = { version = "4.1.3", default-features = false, features = ["digest"] }

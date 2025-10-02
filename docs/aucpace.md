@@ -6,8 +6,8 @@ AuCPace is a modern verifier-based PAKE designed for low-power and constrained e
 
 References:
 - Paper: https://eprint.iacr.org/2018/286
-- Crate docs: https://docs.rs/aucpace
-- Crate on crates.io: https://crates.io/crates/aucpace
+- Crate docs: https://docs.rs/aucpace-conflux
+- Crate on crates.io: https://crates.io/crates/aucpace-conflux
 
 ---
 
@@ -64,7 +64,7 @@ AuCPace consists of two phases:
 
 Example `Cargo.toml` snippet enabling `serde`:
     [dependencies]
-    aucpace = { version = "x.y", features = ["serde"] }
+    aucpace-conflux = { version = "x.y", features = ["serde"] }
     serde = { version = "1", features = ["derive"] }
 
 Replace `x.y` with the desired crate version (see crates.io).

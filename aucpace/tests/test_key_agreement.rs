@@ -1,6 +1,6 @@
-use aucpace::client::{AuCPaceClientPreAug, AuCPaceClientRecvServerKey};
-use aucpace::server::{AuCPaceServerAugLayer, AuCPaceServerRecvClientKey};
-use aucpace::{Client, ClientMessage, Database, Result, Server, ServerMessage};
+use aucpace_conflux::client::{AuCPaceClientPreAug, AuCPaceClientRecvServerKey};
+use aucpace_conflux::server::{AuCPaceServerAugLayer, AuCPaceServerRecvClientKey};
+use aucpace_conflux::{Client, ClientMessage, Database, Result, Server, ServerMessage};
 use curve25519_dalek::RistrettoPoint;
 use password_hash::{ParamsString, SaltString};
 use rand::rngs::OsRng;

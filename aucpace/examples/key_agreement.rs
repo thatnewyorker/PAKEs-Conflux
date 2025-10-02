@@ -1,4 +1,4 @@
-use aucpace::{Client, ClientMessage, Database, Result, Server, ServerMessage};
+use aucpace_conflux::{Client, ClientMessage, Database, Result, Server, ServerMessage};
 use curve25519_dalek::ristretto::RistrettoPoint;
 use password_hash::{ParamsString, SaltString};
 use rand::rngs::OsRng;

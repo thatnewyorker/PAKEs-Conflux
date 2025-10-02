@@ -1,6 +1,6 @@
 use bencher::Bencher;
 use bencher::{benchmark_group, benchmark_main};
-use spake2::{Ed25519Group, Identity, Password, Spake2};
+use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
 
 fn spake2_start(bench: &mut Bencher) {
     bench.iter(|| {

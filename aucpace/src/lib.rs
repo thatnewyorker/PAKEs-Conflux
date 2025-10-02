@@ -10,11 +10,11 @@
 #![allow(clippy::large_enum_variant)]
 
 //! # Usage
-//! Add `aucpace` to your `Cargo.toml`:
+//! Add `aucpace-conflux` to your `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
-//! aucpace = "0.1"
+//! aucpace-conflux = "0.1"
 //! ```
 //!
 //! Next read documentation for [`client`](client/index.html) and

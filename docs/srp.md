@@ -7,8 +7,8 @@ SRP is a verifier-based PAKE designed primarily for password login flows. It all
 References:
 - Overview: https://en.wikipedia.org/wiki/Secure_Remote_Password_protocol
 - RFC 5054 (TLS-SRP groups and usage): https://datatracker.ietf.org/doc/html/rfc5054
-- Crate docs: https://docs.rs/srp
-- Crate on crates.io: https://crates.io/crates/srp
+- Crate docs: https://docs.rs/srp-conflux
+- Crate on crates.io: https://crates.io/crates/srp-conflux
 
 ---
 
@@ -73,7 +73,7 @@ The `srp` crate also supports using a specialized password hashing/KDF for the p
 - See docs.rs for the current API, features, and examples.
 
 Example dependency snippet (replace x.y with the desired version):
-- srp = "x.y"
+- srp-conflux = "x.y"
 - sha2 = "0.10"
 
 ---

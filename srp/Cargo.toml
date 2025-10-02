@@ -1,16 +1,19 @@
 [package]
-name = "srp"
+name = "srp-conflux"
 version = "0.7.0-pre"
 authors = ["Gerard Cruzado <thatnewyorker@gmail.com", "RustCrypto Developers"]
 license = "MIT OR Apache-2.0"
 description = "Secure Remote Password (SRP) protocol implementation"
-documentation = "https://docs.rs/srp"
+documentation = "https://docs.rs/srp-conflux"
 repository = "https://github.com/thatnewyorker/PAKEs-Conflux"
 keywords = ["crypto", "pake", "authentication"]
 categories = ["cryptography", "authentication"]
 readme = "README.md"
 edition = "2024"
 rust-version = "1.90"
+
+[lib]
+name = "srp_conflux"
 
 [dependencies]
 num-bigint = "0.4"

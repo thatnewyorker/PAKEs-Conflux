@@ -78,10 +78,10 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/aucpace.svg
-[crate-link]: https://crates.io/crates/aucpace
-[docs-image]: https://docs.rs/aucpace/badge.svg
-[docs-link]: https://docs.rs/aucpace/
+[crate-image]: https://img.shields.io/crates/v/aucpace-conflux.svg
+[crate-link]: https://crates.io/crates/aucpace-conflux
+[docs-image]: https://docs.rs/aucpace-conflux/badge.svg
+[docs-link]: https://docs.rs/aucpace-conflux/
 [build-image]: https://github.com/thatnewyorker/PAKEs-Conflux/actions/workflows/aucpace.yml/badge.svg
 [build-link]: https://github.com/thatnewyorker/PAKEs-Conflux/actions/workflows/aucpace.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg

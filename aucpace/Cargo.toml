@@ -1,9 +1,9 @@
 [package]
-name = "aucpace"
+name = "aucpace-conflux"
 version = "0.2.0-pre"
 authors = ["Gerard Cruzado <thatnewyorker@gmail.com>", "Sam Leonard <tritoke@protonmail.com>"]
 description = "AuCPace protocol implementation"
-documentation = "https://docs.rs/aucpace"
+documentation = "https://docs.rs/aucpace-conflux"
 homepage = "https://github.com/thatnewyorker/PAKEs-Conflux/tree/master/aucpace"
 repository = "https://github.com/thatnewyorker/PAKEs-Conflux"
 license = "MIT OR Apache-2.0"
@@ -13,6 +13,9 @@ exclude = [".gitignore"]
 readme = "README.md"
 edition = "2024"
 rust-version = "1.90"
+
+[lib]
+name = "aucpace_conflux"
 
 [dependencies]
 curve25519-dalek = { version = "4", default-features = false, features = [

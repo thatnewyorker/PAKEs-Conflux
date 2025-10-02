@@ -1,10 +1,10 @@
 use hex_literal::hex;
 use num_bigint::BigUint;
 use sha1::Sha1;
-use srp::client::SrpClient;
-use srp::groups::G_1024;
-use srp::server::SrpServer;
-use srp::utils::{compute_k, compute_u};
+use srp_conflux::client::SrpClient;
+use srp_conflux::groups::G_1024;
+use srp_conflux::server::SrpServer;
+use srp_conflux::utils::{compute_k, compute_u};
 
 #[test]
 #[allow(clippy::many_single_char_names)]
@@ -37,7 +37,7 @@ fn rfc5054() {
     assert_eq!(
         v.to_bytes_be(),
         hex!(
-            "        
+            "
          7E273DE8 696FFC4F 4E337D05 B4B375BE B0DDE156 9E8FA00A 9886D812
          9BADA1F1 822223CA 1A605B53 0E379BA4 729FDC59 F105B478 7E5186F5
          C671085A 1447B52A 48CF1970 B4FB6F84 00BBF4CE BFBB1681 52E08AB5

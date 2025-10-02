@@ -1,9 +1,9 @@
 use rand_core::TryRngCore;
 use sha2::Sha256;
-use srp::client::SrpClient;
+use srp_conflux::client::SrpClient;
 
-use srp::groups::G_2048;
-use srp::server::SrpServer;
+use srp_conflux::groups::G_2048;
+use srp_conflux::server::SrpServer;
 
 fn auth_test(true_pwd: &[u8], auth_pwd: &[u8]) {
     let mut rng = rand::rngs::OsRng;

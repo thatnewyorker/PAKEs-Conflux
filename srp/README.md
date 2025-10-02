@@ -54,10 +54,10 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/srp.svg
-[crate-link]: https://crates.io/crates/srp
-[docs-image]: https://docs.rs/srp/badge.svg
-[docs-link]: https://docs.rs/srp/
+[crate-image]: https://img.shields.io/crates/v/srp-conflux.svg
+[crate-link]: https://crates.io/crates/srp-conflux
+[docs-image]: https://docs.rs/srp-conflux/badge.svg
+[docs-link]: https://docs.rs/srp-conflux/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.60+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg

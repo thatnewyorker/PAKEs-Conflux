@@ -1,7 +1,7 @@
 #![cfg(feature = "strong_aucpace")]
-use aucpace::client::{AuCPaceClientPreAug, AuCPaceClientRecvServerKey};
-use aucpace::server::{AuCPaceServerAugLayer, AuCPaceServerRecvClientKey};
-use aucpace::{Client, ClientMessage, Result, Server, ServerMessage};
+use aucpace_conflux::client::{AuCPaceClientPreAug, AuCPaceClientRecvServerKey};
+use aucpace_conflux::server::{AuCPaceServerAugLayer, AuCPaceServerRecvClientKey};
+use aucpace_conflux::{Client, ClientMessage, Result, Server, ServerMessage};
 use curve25519_dalek::{RistrettoPoint, Scalar};
 use password_hash::ParamsString;
 use rand::rngs::OsRng;

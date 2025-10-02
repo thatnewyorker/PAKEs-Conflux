@@ -1,9 +1,9 @@
 use num_bigint::BigUint;
 use num_traits::identities::Zero;
 use sha1::Sha1;
-use srp::client::SrpClient;
-use srp::groups::G_1024;
-use srp::server::SrpServer;
+use srp_conflux::client::SrpClient;
+use srp_conflux::groups::G_1024;
+use srp_conflux::server::SrpServer;
 
 #[test]
 #[should_panic]

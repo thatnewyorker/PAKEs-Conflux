@@ -41,7 +41,7 @@
 //! Thus a client-side program start with:
 //!
 //! ```rust
-//! use spake2::{Ed25519Group, Identity, Password, Spake2};
+//! use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
 //! # fn send(msg: &[u8]) {}
 //! let (s1, outbound_msg) = Spake2::<Ed25519Group>::start_a(
 //!    &Password::new(b"password"),
@@ -58,7 +58,7 @@
 //!
 //! ```rust
 //! # fn send(msg: &[u8]) {}
-//! use spake2::{Ed25519Group, Identity, Password, Spake2};
+//! use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
 //! let (s1, outbound_msg) = Spake2::<Ed25519Group>::start_b(
 //!    &Password::new(b"password"),
 //!    &Identity::new(b"client id string"),
@@ -102,7 +102,7 @@
 //!
 //! ```rust
 //! # fn send(msg: &[u8]) {}
-//! use spake2::{Ed25519Group, Identity, Password, Spake2};
+//! use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
 //! let (s1, outbound_msg) = Spake2::<Ed25519Group>::start_symmetric(
 //!    &Password::new(b"password"),
 //!    &Identity::new(b"shared id string"));
@@ -117,7 +117,7 @@
 //!
 //! ```rust
 //! # fn send(msg: &[u8]) {}
-//! use spake2::{Ed25519Group, Identity, Password, Spake2};
+//! use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
 //! let (s1, outbound_msg) = Spake2::<Ed25519Group>::start_symmetric(
 //!    &Password::new(b"password"),
 //!    &Identity::new(b"shared id string"));
