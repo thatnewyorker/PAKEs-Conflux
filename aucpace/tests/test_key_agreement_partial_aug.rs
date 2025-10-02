@@ -1,3 +1,4 @@
+#![cfg(feature = "partial_augmentation")]
 use aucpace::client::{AuCPaceClientPreAug, AuCPaceClientRecvServerKey};
 use aucpace::server::{AuCPaceServerAugLayer, AuCPaceServerRecvClientKey};
 use aucpace::{
@@ -5,7 +6,7 @@ use aucpace::{
 };
 use curve25519_dalek::{RistrettoPoint, Scalar};
 use password_hash::{ParamsString, SaltString};
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 use scrypt::{Params, Scrypt};
 use sha2::Sha512;
 
@@ -85,8 +86,8 @@ fn test_key_agreement() -> Result<()> {
     let (mut base_client, mut base_server, database) = init()?;
 
     // ===== SSID Establishment =====
-    let (server, server_message) = base_server.begin();
-    let (client, client_message) = base_client.begin();
+    let (server, server_message) = base_server.begin()?;
+    let (client, client_message) = base_client.begin()?;
 
     // server receives client nonce
     let server = if let ClientMessage::Nonce(client_nonce) = client_message {
@@ -144,8 +145,8 @@ fn test_key_agreement_implicit_auth() -> Result<()> {
     let (mut base_client, mut base_server, database) = init()?;
 
     // ===== SSID Establishment =====
-    let (server, server_message) = base_server.begin();
-    let (client, client_message) = base_client.begin();
+    let (server, server_message) = base_server.begin()?;
+    let (client, client_message) = base_client.begin()?;
 
     // server receives client nonce
     let server = if let ClientMessage::Nonce(client_nonce) = client_message {
@@ -264,7 +265,7 @@ fn test_key_agreement_prestablished_ssid_implicit_auth() -> Result<()> {
 /// Perform the initialisation step for all tests
 fn init() -> Result<(Client, Server, SingleUserDatabase)> {
     // Create the client, server and database
-    let mut base_server = Server::new(OsRng);
+    let mut base_server = Server::new(OsRng)?;
     let mut base_client = Client::new(OsRng);
     let mut database: SingleUserDatabase = Default::default();
 
@@ -303,7 +304,7 @@ fn test_core(
 
     // server generates augmentation info from client's username
     let (server, server_message) = if let ClientMessage::Username(username) = client_message {
-        server.generate_client_info_partial_aug(username, database, OsRng)
+        server.generate_client_info_partial_aug(username, database, OsRng)?
     } else {
         panic!("Received invalid client message {:?}", client_message);
     };

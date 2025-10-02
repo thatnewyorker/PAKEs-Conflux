@@ -1,11 +1,13 @@
 //! "Edwards25519" elliptic curve group.
 
-use crate::{c2_Element, c2_Scalar, Group};
+use crate::{Group, c2_Element, c2_Scalar};
 use alloc::vec::Vec;
 use curve25519_dalek::{constants::ED25519_BASEPOINT_POINT, edwards::CompressedEdwardsY};
 use hkdf::Hkdf;
-use rand_core::{CryptoRng, RngCore};
-use sha2::{Digest, Sha256};
+use rand_core::{TryCryptoRng, TryRngCore};
+use sha2::{Digest, Sha256, Sha512};
+
+use crate::error::Error;
 
 /// Ed25519 elliptic curve group.
 #[derive(Debug, PartialEq, Eq)]
@@ -60,11 +62,18 @@ impl Group for Ed25519Group {
         ed25519_hash_to_scalar(s)
     }
 
-    fn random_scalar<T>(cspring: &mut T) -> c2_Scalar
+    fn random_scalar<T>(cspring: &mut T) -> Result<c2_Scalar, Error>
     where
-        T: RngCore + CryptoRng,
+        T: TryRngCore + TryCryptoRng,
     {
-        c2_Scalar::random(cspring)
+        let mut seed = [0u8; 64];
+        cspring
+            .try_fill_bytes(&mut seed)
+            .map_err(|_| Error::WrongLength)?;
+        let digest = Sha512::digest(&seed);
+        let mut wide = [0u8; 64];
+        wide.copy_from_slice(&digest);
+        Ok(c2_Scalar::from_bytes_mod_order_wide(&wide))
     }
 
     fn scalar_neg(s: &c2_Scalar) -> c2_Scalar {

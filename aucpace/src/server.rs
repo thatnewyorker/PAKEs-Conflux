@@ -1,9 +1,9 @@
+use crate::Database;
 use crate::constants::MIN_SSID_LEN;
 use crate::utils::{
-    compute_authenticator_messages, compute_first_session_key, compute_session_key, compute_ssid,
-    generate_keypair, generate_nonce, generate_server_keypair, H0,
+    H0, compute_authenticator_messages, compute_first_session_key, compute_session_key,
+    compute_ssid, generate_keypair, generate_nonce, generate_server_keypair,
 };
-use crate::Database;
 use crate::{Error, Result};
 use core::marker::PhantomData;
 use curve25519_dalek::traits::IsIdentity;
@@ -14,7 +14,7 @@ use curve25519_dalek::{
     scalar::Scalar,
 };
 use password_hash::{ParamsString, SaltString};
-use rand_core::CryptoRngCore;
+use rand_core::{TryCryptoRng, TryRngCore};
 use subtle::ConstantTimeEq;
 
 #[cfg(feature = "partial_augmentation")]
@@ -34,8 +34,8 @@ use serde::{Deserialize, Serialize};
 struct ServerSecret(u64);
 
 impl ServerSecret {
-    fn new<CSPRNG: CryptoRngCore>(rng: &mut CSPRNG) -> Self {
-        Self(rng.next_u64())
+    fn new<CSPRNG: TryRngCore + TryCryptoRng>(rng: &mut CSPRNG) -> Result<Self> {
+        Ok(Self(rng.try_next_u64().map_err(|_| Error::Rng)?))
     }
 }
 
@@ -43,7 +43,7 @@ impl ServerSecret {
 pub struct AuCPaceServer<D, CSPRNG, const K1: usize>
 where
     D: Digest + Default,
-    CSPRNG: CryptoRngCore,
+    CSPRNG: TryRngCore + TryCryptoRng,
 {
     /// The CSPRNG used to generate random values where needed
     rng: CSPRNG,
@@ -57,16 +57,16 @@ where
 impl<D, CSPRNG, const K1: usize> AuCPaceServer<D, CSPRNG, K1>
 where
     D: Digest<OutputSize = U64> + Default,
-    CSPRNG: CryptoRngCore,
+    CSPRNG: TryRngCore + TryCryptoRng,
 {
     /// Create a new server
-    pub fn new(mut rng: CSPRNG) -> Self {
-        let secret = ServerSecret::new(&mut rng);
-        Self {
+    pub fn new(mut rng: CSPRNG) -> Result<Self> {
+        let secret = ServerSecret::new(&mut rng)?;
+        Ok(Self {
             rng,
             secret,
             d: PhantomData,
-        }
+        })
     }
 
     /// Create a new server in the SSID agreement phase
@@ -78,13 +78,13 @@ where
     ///
     pub fn begin(
         &mut self,
-    ) -> (
+    ) -> Result<(
         AuCPaceServerSsidEstablish<D, K1>,
         ServerMessage<'static, K1>,
-    ) {
-        let next_step = AuCPaceServerSsidEstablish::new(self.secret.clone(), &mut self.rng);
+    )> {
+        let next_step = AuCPaceServerSsidEstablish::new(self.secret.clone(), &mut self.rng)?;
         let message = ServerMessage::Nonce(next_step.nonce);
-        (next_step, message)
+        Ok((next_step, message))
     }
 
     /// Create a new server in the Augmentation layer phase, provided an SSID
@@ -124,8 +124,8 @@ where
     /// - `public_key`: the public key
     ///
     #[cfg(feature = "partial_augmentation")]
-    pub fn generate_long_term_keypair(&mut self) -> (Scalar, RistrettoPoint) {
-        generate_server_keypair(&mut self.rng)
+    pub fn generate_long_term_keypair(&mut self) -> Result<(Scalar, RistrettoPoint)> {
+        generate_server_keypair::<D, _>(&mut self.rng)
     }
 }
 
@@ -143,15 +143,15 @@ impl<D, const K1: usize> AuCPaceServerSsidEstablish<D, K1>
 where
     D: Digest<OutputSize = U64> + Default,
 {
-    fn new<CSPRNG>(secret: ServerSecret, rng: &mut CSPRNG) -> Self
+    fn new<CSPRNG>(secret: ServerSecret, rng: &mut CSPRNG) -> Result<Self>
     where
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
-        Self {
+        Ok(Self {
             secret,
-            nonce: generate_nonce(rng),
+            nonce: generate_nonce(rng)?,
             _d: PhantomData,
-        }
+        })
     }
 
     /// Consume the client's nonce - `t` and progress to the augmentation layer
@@ -203,22 +203,22 @@ where
         username: U,
         database: &DB,
         mut rng: CSPRNG,
-    ) -> (
+    ) -> Result<(
         AuCPaceServerCPaceSubstep<D, CSPRNG, K1>,
         ServerMessage<'static, K1>,
-    )
+    )>
     where
         U: AsRef<[u8]>,
         DB: Database<PasswordVerifier = RistrettoPoint>,
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
-        let (x, x_pub) = generate_server_keypair(&mut rng);
+        let (x, x_pub) = generate_server_keypair::<D, _>(&mut rng)?;
 
         // generate the prs and client message
-        let (prs, message) = self.generate_prs(username.as_ref(), database, &mut rng, x, x_pub);
+        let (prs, message) = self.generate_prs(username.as_ref(), database, &mut rng, x, x_pub)?;
         let next_step = AuCPaceServerCPaceSubstep::new(self.ssid, prs, rng);
 
-        (next_step, message)
+        Ok((next_step, message))
     }
 
     /// Accept the user's username and generate the `ClientInfo` for the response.
@@ -255,7 +255,7 @@ where
         U: AsRef<[u8]>,
         DB: Database<PasswordVerifier = RistrettoPoint>
             + PartialAugDatabase<PrivateKey = Scalar, PublicKey = RistrettoPoint>,
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
         let user = username.as_ref();
         let (prs, message) = if let Some((x, x_pub)) = database.lookup_long_term_keypair(user) {
@@ -264,7 +264,13 @@ where
         } else {
             // if the user does not have a keypair stored then we generate a random point on the
             // curve to be the public key, and handle the failed lookup as normal
-            let x_pub = RistrettoPoint::random(&mut rng);
+            let x_pub = {
+                let mut seed = [0u8; 32];
+                rng.try_fill_bytes(&mut seed).map_err(|_| Error::Rng)?;
+                let mut hasher: D = crate::utils::H1();
+                hasher.update(&seed);
+                RistrettoPoint::from_hash(hasher)
+            };
             self.lookup_failed(user, x_pub, &mut rng)
         };
         let next_step = AuCPaceServerCPaceSubstep::new(self.ssid, prs, rng);
@@ -304,9 +310,9 @@ where
     where
         U: AsRef<[u8]>,
         DB: StrongDatabase<PasswordVerifier = RistrettoPoint, Exponent = Scalar>,
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
-        let (x, x_pub) = generate_server_keypair(&mut rng);
+        let (x, x_pub) = generate_server_keypair::<D, _>(&mut rng)?;
 
         // generate the prs and client message
         let (prs, message) =
@@ -350,7 +356,7 @@ where
         U: AsRef<[u8]>,
         DB: StrongDatabase<PasswordVerifier = RistrettoPoint, Exponent = Scalar>
             + PartialAugDatabase<PrivateKey = Scalar, PublicKey = RistrettoPoint>,
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
         let user = username.as_ref();
         let (prs, message) = if let Some((x, x_pub)) = database.lookup_long_term_keypair(user) {
@@ -359,7 +365,13 @@ where
         } else {
             // if the user does not have a keypair stored then we generate a random point on the
             // curve to be the public key, and handle the failed lookup as normal
-            let x_pub = RistrettoPoint::random(&mut rng);
+            let x_pub = {
+                let mut seed = [0u8; 32];
+                rng.try_fill_bytes(&mut seed).map_err(|_| Error::Rng)?;
+                let mut hasher: D = crate::utils::H1();
+                hasher.update(&seed);
+                RistrettoPoint::from_hash(hasher)
+            };
             self.lookup_failed_strong(user, blinded, x_pub, &mut rng)?
         };
         let next_step = AuCPaceServerCPaceSubstep::new(self.ssid, prs, rng);
@@ -375,10 +387,10 @@ where
         rng: &mut CSPRNG,
         x: Scalar,
         x_pub: RistrettoPoint,
-    ) -> ([u8; 32], ServerMessage<'static, K1>)
+    ) -> Result<([u8; 32], ServerMessage<'static, K1>)>
     where
         DB: Database<PasswordVerifier = RistrettoPoint>,
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
         if let Some((w, salt, sigma)) = database.lookup_verifier(username.as_ref()) {
             let cofactor = Scalar::ONE;
@@ -390,7 +402,7 @@ where
                 salt,
                 pbkdf_params: sigma,
             };
-            (prs, message)
+            Ok((prs, message))
         } else {
             // handle the failure case
             self.lookup_failed(username, x_pub, rng)
@@ -411,7 +423,7 @@ where
     ) -> Result<([u8; 32], ServerMessage<'static, K1>)>
     where
         DB: StrongDatabase<PasswordVerifier = RistrettoPoint, Exponent = Scalar>,
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
         if let Some((w, q, sigma)) = database.lookup_verifier_strong(username.as_ref()) {
             let cofactor = Scalar::ONE;
@@ -440,13 +452,13 @@ where
         username: &[u8],
         x_pub: RistrettoPoint,
         rng: &mut CSPRNG,
-    ) -> ([u8; 32], ServerMessage<'static, K1>)
+    ) -> Result<([u8; 32], ServerMessage<'static, K1>)>
     where
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
         let prs = {
             let mut tmp = [0u8; 32];
-            rng.fill_bytes(&mut tmp);
+            rng.try_fill_bytes(&mut tmp).map_err(|_| Error::Rng)?;
             tmp
         };
 
@@ -470,7 +482,7 @@ where
             pbkdf_params: ParamsString::default(),
         };
 
-        (prs, message)
+        Ok((prs, message))
     }
 
     /// Generate the message for if the lookup failed
@@ -483,11 +495,11 @@ where
         rng: &mut CSPRNG,
     ) -> Result<([u8; 32], ServerMessage<'static, K1>)>
     where
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
         let prs = {
             let mut tmp = [0u8; 32];
-            rng.fill_bytes(&mut tmp);
+            rng.try_fill_bytes(&mut tmp).map_err(|_| Error::Rng)?;
             tmp
         };
 
@@ -519,7 +531,7 @@ where
 pub struct AuCPaceServerCPaceSubstep<D, CSPRNG, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
-    CSPRNG: CryptoRngCore,
+    CSPRNG: TryRngCore + TryCryptoRng,
 {
     ssid: Output<D>,
     prs: [u8; 32],
@@ -529,7 +541,7 @@ where
 impl<D, CSPRNG, const K1: usize> AuCPaceServerCPaceSubstep<D, CSPRNG, K1>
 where
     D: Digest<OutputSize = U64> + Default,
-    CSPRNG: CryptoRngCore,
+    CSPRNG: TryRngCore + TryCryptoRng,
 {
     const fn new(ssid: Output<D>, prs: [u8; 32], rng: CSPRNG) -> Self {
         Self { ssid, prs, rng }
@@ -552,21 +564,21 @@ where
     pub fn generate_public_key<CI: AsRef<[u8]>>(
         mut self,
         channel_identifier: CI,
-    ) -> (
+    ) -> Result<(
         AuCPaceServerRecvClientKey<D, K1>,
         ServerMessage<'static, K1>,
-    ) {
+    )> {
         let (priv_key, pub_key) = generate_keypair::<D, CSPRNG, CI>(
             &mut self.rng,
             self.ssid,
             self.prs,
             channel_identifier,
-        );
+        )?;
 
         let next_step = AuCPaceServerRecvClientKey::new(self.ssid, priv_key);
         let message = ServerMessage::PublicKey(pub_key);
 
-        (next_step, message)
+        Ok((next_step, message))
     }
 }
 
@@ -739,8 +751,8 @@ mod tests {
     #[cfg(all(feature = "sha2", feature = "getrandom"))]
     fn test_server_doesnt_accept_insecure_ssid() {
         use crate::Server;
-        use rand_core::OsRng;
-        let mut server = Server::new(OsRng);
+        use rand::rngs::OsRng;
+        let mut server = Server::new(OsRng).expect("failed to initialize server RNG");
         let res = server.begin_prestablished_ssid("bad ssid");
         assert!(matches!(res, Err(Error::InsecureSsid)));
     }
@@ -837,7 +849,7 @@ mod tests {
     fn test_server_doesnt_accept_invalid_uq() {
         use crate::utils::H0;
         use curve25519_dalek::traits::Identity;
-        use rand_core::OsRng;
+        use rand::rngs::OsRng;
 
         let ssid = H0::<sha2::Sha512>().finalize();
         let aug_server: AuCPaceServerAugLayer<sha2::Sha512, 16> =
@@ -861,7 +873,7 @@ mod tests {
     fn test_server_doesnt_accept_invalid_uq_partial() {
         use crate::utils::H0;
         use curve25519_dalek::traits::Identity;
-        use rand_core::OsRng;
+        use rand::rngs::OsRng;
 
         let ssid = H0::<sha2::Sha512>().finalize();
         let aug_server: AuCPaceServerAugLayer<sha2::Sha512, 16> =

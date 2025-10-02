@@ -7,7 +7,7 @@ use curve25519_dalek::{
     scalar::Scalar,
 };
 use password_hash::PasswordHash;
-use rand_core::CryptoRngCore;
+use rand_core::{TryCryptoRng, TryRngCore};
 
 #[allow(non_snake_case)]
 #[inline]
@@ -34,15 +34,36 @@ create_h_impl!(H3, 3);
 create_h_impl!(H4, 4);
 create_h_impl!(H5, 5);
 
-/// Generate a fixed length nonce using a CSPRNG
+/// Generate a fixed length nonce using a CSPRNG.
+///
+/// This function is fallible: it will return `Err(Error::Rng)` if the supplied
+/// CSPRNG fails to produce bytes (for example, due to an OS entropy failure).
+/// Callers should handle or propagate this error.
+///
+/// Examples
+///
+/// Propagate the error with `?`:
+///
+/// let mut rng = rand::rngs::OsRng;
+/// let nonce: [u8; 32] = generate_nonce(&mut rng)?;
+///
+/// Explicitly match and handle the RNG error:
+///
+/// match generate_nonce(&mut rng) {
+///     Ok(nonce) => { /* use nonce */ }
+///     Err(e) => match e {
+///         Error::Rng => { /* handle RNG failure */ }
+///         _ => { /* other errors */ }
+///     },
+/// }
 #[inline]
-pub fn generate_nonce<CSPRNG, const N: usize>(rng: &mut CSPRNG) -> [u8; N]
+pub fn generate_nonce<CSPRNG, const N: usize>(rng: &mut CSPRNG) -> Result<[u8; N]>
 where
-    CSPRNG: CryptoRngCore,
+    CSPRNG: TryRngCore + TryCryptoRng,
 {
     let mut nonce = [0; N];
-    rng.fill_bytes(&mut nonce);
-    nonce
+    rng.try_fill_bytes(&mut nonce).map_err(|_| Error::Rng)?;
+    Ok(nonce)
 }
 
 /// Computes the SSID from two server and client nonces - s and t
@@ -54,17 +75,39 @@ pub fn compute_ssid<D: Digest + Default, const K1: usize>(s: [u8; K1], t: [u8; K
     hasher.finalize()
 }
 
-/// Generate a Diffie-Hellman keypair for the `CPace` substep of the protocol
+/// Generate a Diffie-Hellman keypair for the `CPace` substep of the protocol.
+///
+/// This function is fallible and will return `Err(Error::Rng)` if the provided
+/// RNG fails. Callers should propagate or handle this error appropriately.
+///
+/// Example (propagate the error):
+///
+/// let (priv_key, pub_key) = generate_keypair::<sha2::Sha512, _, _>(
+///     &mut rng,
+///     ssid,
+///     prs,
+///     channel_identifier,
+/// )?;
+///
+/// Example (explicit handling):
+///
+/// match generate_keypair::<sha2::Sha512, _, _>(&mut rng, ssid, prs, channel_identifier) {
+///     Ok((x, X)) => { /* use keys */ }
+///     Err(e) => match e {
+///         Error::Rng => { /* handle RNG failure */ }
+///         _ => { /* other errors */ }
+///     },
+/// }
 #[inline]
 pub fn generate_keypair<D, CSPRNG, CI>(
     rng: &mut CSPRNG,
     ssid: Output<D>,
     prs: [u8; 32],
     ci: CI,
-) -> (Scalar, RistrettoPoint)
+) -> Result<(Scalar, RistrettoPoint)>
 where
     D: Digest<OutputSize = U64> + Default,
-    CSPRNG: CryptoRngCore,
+    CSPRNG: TryRngCore + TryCryptoRng,
     CI: AsRef<[u8]>,
 {
     let mut hasher: D = H1();
@@ -73,11 +116,15 @@ where
     hasher.update(ci);
 
     let generator = RistrettoPoint::from_hash(hasher);
-    let priv_key = Scalar::random(rng);
+    let mut rng_bytes = [0u8; 64];
+    rng.try_fill_bytes(&mut rng_bytes).map_err(|_| Error::Rng)?;
+    let mut rng_hasher: D = Default::default();
+    rng_hasher.update(&rng_bytes);
+    let priv_key = Scalar::from_hash(rng_hasher);
     let cofactor = Scalar::ONE;
     let pub_key = generator * (priv_key * cofactor);
 
-    (priv_key, pub_key)
+    Ok((priv_key, pub_key))
 }
 
 /// Compute the first session key sk1 from our private key and the other participant's public key
@@ -153,18 +200,39 @@ pub fn scalar_from_hash(pw_hash: &PasswordHash<'_>) -> Result<Scalar> {
 }
 
 /// Generate a keypair (x, X) for the server
+///
+/// This function is fallible: it will return `Err(Error::Rng)` if the RNG fails
+/// to produce bytes. Callers should treat RNG failures as recoverable errors
+/// (for example, by retrying or by reporting the failure to an operator).
+///
+/// Example (propagate with `?`):
+///
+/// let (private, public) = generate_server_keypair::<sha2::Sha512, _>(&mut rng)?;
+///
+/// Example (explicit handling):
+///
+/// if let Err(e) = generate_server_keypair::<sha2::Sha512, _>(&mut rng) {
+///     if let Error::Rng = e {
+///         // handle RNG failure (e.g. log and retry or abort)
+///     }
+/// }
 #[inline]
-pub fn generate_server_keypair<CSPRNG>(rng: &mut CSPRNG) -> (Scalar, RistrettoPoint)
+pub fn generate_server_keypair<D, CSPRNG>(rng: &mut CSPRNG) -> Result<(Scalar, RistrettoPoint)>
 where
-    CSPRNG: CryptoRngCore,
+    D: Digest<OutputSize = U64> + Default,
+    CSPRNG: TryRngCore + TryCryptoRng,
 {
     // for ristretto255 the cofactor is 1, for normal curve25519 it is 8
     // this will need to be provided by a group trait in the future
     let cofactor = Scalar::ONE;
-    let private = Scalar::random(rng);
+    let mut rng_bytes = [0u8; 64];
+    rng.try_fill_bytes(&mut rng_bytes).map_err(|_| Error::Rng)?;
+    let mut rng_hasher: D = Default::default();
+    rng_hasher.update(&rng_bytes);
+    let private = Scalar::from_hash(rng_hasher);
     let public = RISTRETTO_BASEPOINT_POINT * (private * cofactor);
 
-    (private, public)
+    Ok((private, public))
 }
 
 // serde_with helper modules for serialising

@@ -1,10 +1,10 @@
 use aucpace::{Client, ClientMessage, Database, Result, Server, ServerMessage};
 use curve25519_dalek::ristretto::RistrettoPoint;
 use password_hash::{ParamsString, SaltString};
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 use scrypt::{Params, Scrypt};
-use sha2::digest::Output;
 use sha2::Sha512;
+use sha2::digest::Output;
 use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -66,10 +66,10 @@ fn main() -> Result<()> {
 
         // buffer for receiving packets
         let mut buf = [0u8; 1024];
-        let mut base_server = Server::new(OsRng);
+        let mut base_server = Server::new(OsRng)?;
 
         // ===== SSID Establishment =====
-        let (server, message) = base_server.begin();
+        let (server, message) = base_server.begin()?;
         let bytes_sent = send!(stream, message);
         SERVER_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!("[server] Sending message: Nonce, sent {} bytes", bytes_sent);
@@ -84,7 +84,7 @@ fn main() -> Result<()> {
         // ===== Augmentation Layer =====
         client_message = recv!(stream, buf);
         let (server, message) = if let ClientMessage::Username(username) = client_message {
-            server.generate_client_info(username, &database, OsRng)
+            server.generate_client_info(username, &database, OsRng)?
         } else {
             panic!("Received invalid client message {:?}", client_message);
         };
@@ -97,7 +97,7 @@ fn main() -> Result<()> {
 
         // ===== CPace substep =====
         let ci = TcpChannelIdentifier::new(client_addr, server_socket).unwrap();
-        let (server, message) = server.generate_public_key(ci);
+        let (server, message) = server.generate_public_key(ci)?;
         let bytes_sent = send!(stream, message);
         SERVER_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!(
@@ -143,7 +143,7 @@ fn main() -> Result<()> {
         let mut buf = [0u8; 1024];
 
         // ===== SSID ESTABLISHMENT =====
-        let (client, message) = base_client.begin();
+        let (client, message) = base_client.begin()?;
         let bytes_sent = send!(stream, message);
         CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!("[client] Sending message: Nonce, sent {} bytes", bytes_sent);
@@ -188,9 +188,25 @@ fn main() -> Result<()> {
 
         // ===== CPace substep =====
         let ci = TcpChannelIdentifier::new(stream.local_addr().unwrap(), server_socket).unwrap();
-        let (client, message) = client.generate_public_key(ci, &mut OsRng);
-        let bytes_sent = send!(stream, message);
-        CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
+        // Demonstrate handling of the fallible RNG-taking API rather than
+        // relying on `?` at the call site. This shows explicit error handling
+        // for `Error::Rng`. In real code you may prefer `?` to propagate.
+        let mut example_rng = rand::rngs::OsRng;
+        match client.generate_public_key(ci, &mut example_rng) {
+            Ok((client, message)) => {
+                let bytes_sent = send!(stream, message);
+                CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
+                // shadow `client` for use in the rest of the flow
+                client
+            }
+            Err(e) => {
+                eprintln!(
+                    "Failed to generate client public key (RNG error or other): {:?}",
+                    e
+                );
+                return Err(e);
+            }
+        };
         println!(
             "[client] Sending message: PublicKey, sent {} bytes",
             bytes_sent

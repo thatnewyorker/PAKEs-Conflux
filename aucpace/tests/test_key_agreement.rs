@@ -3,7 +3,7 @@ use aucpace::server::{AuCPaceServerAugLayer, AuCPaceServerRecvClientKey};
 use aucpace::{Client, ClientMessage, Database, Result, Server, ServerMessage};
 use curve25519_dalek::RistrettoPoint;
 use password_hash::{ParamsString, SaltString};
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 use scrypt::{Params, Scrypt};
 use sha2::Sha512;
 
@@ -52,8 +52,8 @@ fn test_key_agreement() -> Result<()> {
     let (mut base_client, mut base_server, database) = init()?;
 
     // ===== SSID Establishment =====
-    let (server, server_message) = base_server.begin();
-    let (client, client_message) = base_client.begin();
+    let (server, server_message) = base_server.begin()?;
+    let (client, client_message) = base_client.begin()?;
 
     // server receives client nonce
     let server = if let ClientMessage::Nonce(client_nonce) = client_message {
@@ -111,8 +111,8 @@ fn test_key_agreement_implicit_auth() -> Result<()> {
     let (mut base_client, mut base_server, database) = init()?;
 
     // ===== SSID Establishment =====
-    let (server, server_message) = base_server.begin();
-    let (client, client_message) = base_client.begin();
+    let (server, server_message) = base_server.begin()?;
+    let (client, client_message) = base_client.begin()?;
 
     // server receives client nonce
     let server = if let ClientMessage::Nonce(client_nonce) = client_message {
@@ -231,13 +231,13 @@ fn test_key_agreement_prestablished_ssid_implicit_auth() -> Result<()> {
 /// Perform the initialisation step for all tests
 fn init() -> Result<(Client, Server, SingleUserDatabase)> {
     // Create the client, server and database
-    let base_server = Server::new(OsRng);
+    let base_server = Server::new(OsRng)?;
     let mut base_client = Client::new(OsRng);
     let mut database: SingleUserDatabase = Default::default();
 
     // register a user in the database
     let params = Params::recommended();
-    let registration = base_client.register_alloc(USERNAME, PASSWORD, params, Scrypt)?;
+    let registration = base_client.register::<&[u8], 128>(USERNAME, PASSWORD, params, Scrypt)?;
     if let ClientMessage::Registration {
         username,
         salt,
@@ -259,8 +259,8 @@ fn test_core(
 ) -> Result<(
     AuCPaceClientRecvServerKey<Sha512, K1>,
     AuCPaceServerRecvClientKey<Sha512, K1>,
-    ClientMessage<K1>,
-    ServerMessage<K1>,
+    ClientMessage<'_, K1>,
+    ServerMessage<'_, K1>,
 )> {
     // ===== Augmentation Layer =====
     // client initiates the augmentation phase
@@ -268,7 +268,7 @@ fn test_core(
 
     // server generates augmentation info from client's username
     let (server, server_message) = if let ClientMessage::Username(username) = client_message {
-        server.generate_client_info(username, database, OsRng)
+        server.generate_client_info(username, database, OsRng)?
     } else {
         panic!("Received invalid client message {:?}", client_message);
     };
@@ -289,14 +289,14 @@ fn test_core(
 
             Params::new(log_n, r, p, Params::RECOMMENDED_LEN).unwrap()
         };
-        client.generate_cpace_alloc(x_pub, &salt, params, Scrypt)?
+        client.generate_cpace::<&SaltString, 128>(x_pub, &salt, params, Scrypt)?
     } else {
         panic!("Received invalid server message {:?}", server_message);
     };
 
     // ===== CPace substep =====
-    let (server, server_message) = server.generate_public_key(CI);
-    let (client, client_message) = client.generate_public_key(CI, &mut OsRng);
+    let (server, server_message) = server.generate_public_key(CI)?;
+    let (client, client_message) = client.generate_public_key(CI, &mut OsRng)?;
 
     Ok((client, server, client_message, server_message))
 }

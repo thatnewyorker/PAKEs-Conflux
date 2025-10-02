@@ -7,7 +7,7 @@
 [![Project Chat][chat-image]][chat-link]
 [![Build Status][build-image]][build-link]
 
-Pure Rust implementation of the [SPAKE2] password-authenticated key-exchange algorithm.
+Pure Rust implementation of the [SPAKE2] password-authenticated key-exchange algorithm. Maintained as part of the PAKEs-Conflux workspace.
 
 [Documentation][docs-link]
 
@@ -106,8 +106,8 @@ dual licensed as above, without any additional terms or conditions.
 [rustc-image]: https://img.shields.io/badge/rustc-1.60+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260045-PAKEs
-[build-image]: https://github.com/RustCrypto/PAKEs/actions/workflows/spake2.yml/badge.svg
-[build-link]: https://github.com/RustCrypto/PAKEs/actions/workflows/spake2.yml
+[build-image]: https://github.com/thatnewyorker/PAKEs/actions/workflows/spake2.yml/badge.svg
+[build-link]: https://github.com/thatnewyorker/PAKEs/actions/workflows/spake2.yml
 
 [//]: # (general links)
 

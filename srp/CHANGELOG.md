@@ -2,7 +2,16 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0/).
+
+## Unreleased
+### Changed
+- No RNG-specific API changes were necessary for `srp` as part of the workspace-wide RNG hardening. The recent work focused on making RNG usage fallible in `aucpace` and `spake2`. `srp` maintainers should still audit any direct RNG usage in their integration code and handle RNG errors if they surface from underlying RNG crates.
+  
+### Migration notes
+- Downstream users of the workspace should review call sites that obtain randomness. If you call RNG-taking APIs from `aucpace` or `spake2`, update your code to handle the new `Result`-returning APIs (use `?` to propagate or match on `Err` and handle `Error::Rng`).
+- For `srp` consumers: no changes are required unless you have code that directly used infallible RNG patterns; in that case, replace any `unwrap()`/`expect()` on RNG results with proper error handling.
+
 
 ## 0.6.0 (2022-01-22)
 ### Changed

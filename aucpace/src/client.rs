@@ -1,8 +1,8 @@
 use crate::{
     errors::{Error, Result},
     utils::{
-        compute_authenticator_messages, compute_first_session_key, compute_session_key,
-        compute_ssid, generate_keypair, generate_nonce, scalar_from_hash, H0,
+        H0, compute_authenticator_messages, compute_first_session_key, compute_session_key,
+        compute_ssid, generate_keypair, generate_nonce, scalar_from_hash,
     },
 };
 
@@ -17,7 +17,7 @@ use curve25519_dalek::{
     scalar::Scalar,
 };
 use password_hash::{ParamsString, PasswordHash, PasswordHasher, Salt, SaltString};
-use rand_core::CryptoRngCore;
+use rand_core::{TryCryptoRng, TryRngCore};
 use subtle::ConstantTimeEq;
 
 #[cfg(feature = "strong_aucpace")]
@@ -37,7 +37,7 @@ pub struct AuCPaceClient<D, H, CSPRNG, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
     H: PasswordHasher,
-    CSPRNG: CryptoRngCore,
+    CSPRNG: TryRngCore + TryCryptoRng,
 {
     rng: CSPRNG,
     d: PhantomData<D>,
@@ -48,7 +48,7 @@ impl<D, H, CSPRNG, const K1: usize> AuCPaceClient<D, H, CSPRNG, K1>
 where
     D: Digest<OutputSize = U64> + Default,
     H: PasswordHasher,
-    CSPRNG: CryptoRngCore,
+    CSPRNG: TryRngCore + TryCryptoRng,
 {
     /// Create new server
     pub const fn new(rng: CSPRNG) -> Self {
@@ -62,15 +62,17 @@ where
     /// Create a new client in the SSID agreement phase
     ///
     /// # Return:
-    /// ([`next_step`](AuCPaceClientSsidEstablish), [`message`](ClientMessage::Nonce))
+    /// ([`next_step`](AuCPaceClientSsidEstablish<D, H, K1>), [`message`](ClientMessage::Nonce))
     /// - [`next_step`](AuCPaceClientSsidEstablish): the client in the SSID establishment stage
     /// - [`message`](ClientMessage::Nonce): the message to send to the server
     ///
-    pub fn begin(&mut self) -> (AuCPaceClientSsidEstablish<D, H, K1>, ClientMessage<'_, K1>) {
-        let next_step = AuCPaceClientSsidEstablish::new(&mut self.rng);
+    pub fn begin(
+        &mut self,
+    ) -> Result<(AuCPaceClientSsidEstablish<D, H, K1>, ClientMessage<'_, K1>)> {
+        let next_step = AuCPaceClientSsidEstablish::new(&mut self.rng)?;
         let message = ClientMessage::Nonce(next_step.nonce);
 
-        (next_step, message)
+        Ok((next_step, message))
     }
 
     /// Create a new client in the pre-augmentation layer phase, provided an SSID
@@ -127,7 +129,11 @@ where
     where
         P: AsRef<[u8]>,
     {
-        let salt_string = SaltString::generate(&mut self.rng);
+        let mut bytes = [0u8; Salt::RECOMMENDED_LENGTH];
+        self.rng
+            .try_fill_bytes(&mut bytes)
+            .map_err(|_| Error::Rng)?;
+        let salt_string = SaltString::encode_b64(&bytes).expect("Salt length invariant broken.");
 
         // compute the verifier W
         let pw_hash = hash_password::<&[u8], P, &SaltString, H, BUFSIZ>(
@@ -236,7 +242,11 @@ where
         P: AsRef<[u8]>,
     {
         // adapted from SaltString::generate, which we cannot use due to curve25519 versions of rand_core
-        let salt_string = SaltString::generate(&mut self.rng);
+        let mut bytes = [0u8; Salt::RECOMMENDED_LENGTH];
+        self.rng
+            .try_fill_bytes(&mut bytes)
+            .map_err(|_| Error::Rng)?;
+        let salt_string = SaltString::encode_b64(&bytes).expect("Salt length invariant broken.");
 
         // compute the verifier W
         let pw_hash =
@@ -322,7 +332,12 @@ where
         rng: &mut CSPRNG,
     ) -> Result<(Scalar, SaltString)> {
         // choose a random q
-        let q = Scalar::random(rng);
+        let mut rand_bytes = [0u8; 64];
+        rng.try_fill_bytes(&mut rand_bytes)
+            .map_err(|_| Error::Rng)?;
+        let mut hasher_q: D = H1();
+        hasher_q.update(&rand_bytes);
+        let q = Scalar::from_hash(hasher_q);
 
         // compute z
         let mut hasher: D = H1();
@@ -356,15 +371,15 @@ where
     D: Digest<OutputSize = U64> + Default,
     H: PasswordHasher,
 {
-    fn new<CSPRNG>(rng: &mut CSPRNG) -> Self
+    fn new<CSPRNG>(rng: &mut CSPRNG) -> Result<Self>
     where
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
-        Self {
-            nonce: generate_nonce(rng),
+        Ok(Self {
+            nonce: generate_nonce(rng)?,
             d: PhantomData,
             h: PhantomData,
-        }
+        })
     }
 
     /// Consume the server's nonce - `s` and progress to the augmentation layer
@@ -443,17 +458,22 @@ where
         username: &'a [u8],
         password: &'a [u8],
         rng: &mut CSPRNG,
-    ) -> (
+    ) -> Result<(
         StrongAuCPaceClientAugLayer<'a, D, H, K1>,
         ClientMessage<'a, K1>,
-    )
+    )>
     where
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
         // compute the blinding value and blind the hash of the username and password
         // ensuring that it is non-zero as required by `invert`
         let blinding_value = loop {
-            let val = Scalar::random(rng);
+            let mut rand_bytes = [0u8; 64];
+            rng.try_fill_bytes(&mut rand_bytes)
+                .map_err(|_| Error::Rng)?;
+            let mut hasher_bv: D = H1();
+            hasher_bv.update(&rand_bytes);
+            let val = Scalar::from_hash(hasher_bv);
             if val != Scalar::ZERO {
                 break val;
             }
@@ -469,7 +489,7 @@ where
             StrongAuCPaceClientAugLayer::new(self.ssid, username, password, blinding_value);
         let message = ClientMessage::StrongUsername { username, blinded };
 
-        (next_step, message)
+        Ok((next_step, message))
     }
 }
 
@@ -784,21 +804,21 @@ where
         self,
         channel_identifier: CI,
         rng: &mut CSPRNG,
-    ) -> (
+    ) -> Result<(
         AuCPaceClientRecvServerKey<D, K1>,
         ClientMessage<'static, K1>,
-    )
+    )>
     where
         CI: AsRef<[u8]>,
-        CSPRNG: CryptoRngCore,
+        CSPRNG: TryRngCore + TryCryptoRng,
     {
         let (priv_key, pub_key) =
-            generate_keypair::<D, CSPRNG, CI>(rng, self.ssid, self.prs, channel_identifier);
+            generate_keypair::<D, CSPRNG, CI>(rng, self.ssid, self.prs, channel_identifier)?;
 
         let next_step = AuCPaceClientRecvServerKey::new(self.ssid, priv_key);
         let message = ClientMessage::PublicKey(pub_key);
 
-        (next_step, message)
+        Ok((next_step, message))
     }
 }
 
@@ -1051,13 +1071,14 @@ mod tests {
     #[test]
     #[cfg(all(feature = "alloc", feature = "getrandom", feature = "scrypt"))]
     fn test_hash_password_no_std_and_alloc_agree() {
-        use rand_core::{OsRng, RngCore};
+        use rand::rngs::OsRng;
+        use rand_core::TryRngCore;
         use scrypt::{Params, Scrypt};
 
         let username = "worf@starship.enterprise";
         let password = "data_x_worf_4ever_<3";
         let mut bytes = [0u8; Salt::RECOMMENDED_LENGTH];
-        OsRng.fill_bytes(&mut bytes);
+        OsRng.try_fill_bytes(&mut bytes).unwrap();
         let salt = SaltString::encode_b64(&bytes).expect("Salt length invariant broken.");
         // These are weak parameters, do not use them
         // they are used here to make the test run faster
@@ -1076,7 +1097,7 @@ mod tests {
     #[cfg(all(feature = "getrandom", feature = "sha2"))]
     fn test_client_doesnt_accept_insecure_ssid() {
         use crate::Client;
-        use rand_core::OsRng;
+        use rand::rngs::OsRng;
 
         let mut client = Client::new(OsRng);
         let res = client.begin_prestablished_ssid("bad ssid");

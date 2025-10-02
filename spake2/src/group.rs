@@ -1,7 +1,8 @@
 //! Group trait.
 
+use crate::error::Error;
 use alloc::vec::Vec;
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{TryCryptoRng, TryRngCore};
 
 /// Group trait.
 // TODO(tarcieri): replace with `group` crate?
@@ -31,9 +32,9 @@ pub trait Group {
     fn hash_to_scalar(s: &[u8]) -> Self::Scalar;
 
     /// Generate a random scalar
-    fn random_scalar<T>(cspring: &mut T) -> Self::Scalar
+    fn random_scalar<T>(cspring: &mut T) -> Result<Self::Scalar, Error>
     where
-        T: RngCore + CryptoRng;
+        T: TryRngCore + TryCryptoRng;
 
     /// Scalar negation
     fn scalar_neg(s: &Self::Scalar) -> Self::Scalar;

@@ -1,4 +1,4 @@
-# RustCrypto: PAKEs [![dependency status][deps-image]][deps-link]
+# RustCrypto: PAKEs-Conflux [![dependency status][deps-image]][deps-link]
 [Password-Authenticated Key Agreement][1] protocols implementation.
 
 ## Warnings
@@ -37,8 +37,8 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[deps-image]: https://deps.rs/repo/github/RustCrypto/PAKEs/status.svg
-[deps-link]: https://deps.rs/repo/github/RustCrypto/PAKEs
+[deps-image]: https://deps.rs/repo/github/thatnewyorker/PAKEs/status.svg
+[deps-link]: https://deps.rs/repo/github/thatnewyorker/PAKEs
 
 [//]: # (footnotes)
 

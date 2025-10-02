@@ -7,7 +7,7 @@ use std::{println, time::Instant};
 use aucpace::{Client, ClientMessage, Database, Result, Server, ServerMessage};
 use curve25519_dalek::ristretto::RistrettoPoint;
 use password_hash::{ParamsString, SaltString};
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 use scrypt::{Params, Scrypt};
 
 /// function like macro to wrap sending data over a tcp stream, returns the number of bytes sent
@@ -21,9 +21,7 @@ macro_rules! send {
 
 /// function like macro to wrap receiving data over a tcp stream, returns the message received
 macro_rules! recv {
-    ($buf:ident) => {{
-        postcard::from_bytes(&$buf).unwrap()
-    }};
+    ($buf:ident) => {{ postcard::from_bytes(&$buf).unwrap() }};
 }
 
 fn main() -> Result<()> {
@@ -32,7 +30,7 @@ fn main() -> Result<()> {
     const PASSWORD: &[u8] = b"4d1rA_aND-Gr4Y_aRe_tH3-b3sT <3";
 
     // register the user in the database
-    let mut base_server = Server::new(OsRng);
+    let mut base_server = Server::new(OsRng)?;
     let mut base_client = Client::new(OsRng);
     let mut database: SingleUserDatabase<100> = Default::default();
 
@@ -68,7 +66,7 @@ fn main() -> Result<()> {
 
     // ===== SSID Establishment =====
     // client sends SSID establishment packet
-    let (client, message) = base_client.begin();
+    let (client, message) = base_client.begin()?;
     let bytes_sent = send!(client_buf, message);
     client_bytes_sent += bytes_sent;
     println!(
@@ -80,7 +78,7 @@ fn main() -> Result<()> {
     // responding with a ServerNonce packet
     let mut client_message: ClientMessage<16> = recv!(client_buf);
     let server = if let ClientMessage::Nonce(client_nonce) = client_message {
-        let (server, message) = base_server.begin();
+        let (server, message) = base_server.begin()?;
         let bytes_sent = send!(server_buf, message);
         server_bytes_sent += bytes_sent;
         println!(
@@ -113,7 +111,7 @@ fn main() -> Result<()> {
     // server receives the username then looks up
     client_message = recv!(client_buf);
     let (server, message) = if let ClientMessage::Username(username) = client_message {
-        server.generate_client_info(username, &database, OsRng)
+        server.generate_client_info(username, &database, OsRng)?
     } else {
         panic!("Received invalid client message {:?}", client_message);
     };
@@ -149,7 +147,7 @@ fn main() -> Result<()> {
     // ===== CPace substep =====
     // first generate the server's public key and send it
     const CI: &str = "channel_identifier";
-    let (server, message) = server.generate_public_key(CI);
+    let (server, message) = server.generate_public_key(CI)?;
     let bytes_sent = send!(server_buf, message);
     server_bytes_sent += bytes_sent;
     println!(
@@ -158,7 +156,7 @@ fn main() -> Result<()> {
     );
 
     // now generate the client's public key and send it
-    let (client, message) = client.generate_public_key(CI, &mut OsRng);
+    let (client, message) = client.generate_public_key(CI, &mut OsRng)?;
     let bytes_sent = send!(client_buf, message);
     client_bytes_sent += bytes_sent;
     println!(

@@ -4,10 +4,10 @@ use aucpace::{
 use curve25519_dalek::ristretto::RistrettoPoint;
 use curve25519_dalek::scalar::Scalar;
 use password_hash::{ParamsString, SaltString};
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 use scrypt::{Params, Scrypt};
-use sha2::digest::Output;
 use sha2::Sha512;
+use sha2::digest::Output;
 use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -42,7 +42,7 @@ fn main() -> Result<()> {
 
     // register the user in the database
     let mut base_client = Client::new(OsRng);
-    let mut base_server = Server::new(OsRng);
+    let mut base_server = Server::new(OsRng)?;
     let mut database: SingleUserDatabase = Default::default();
 
     let params = Params::recommended();
@@ -76,7 +76,7 @@ fn main() -> Result<()> {
         let mut buf = [0u8; 1024];
 
         // ===== SSID Establishment =====
-        let (server, message) = base_server.begin();
+        let (server, message) = base_server.begin()?;
         let bytes_sent = send!(stream, message);
         SERVER_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!("[server] Sending message: Nonce, sent {} bytes", bytes_sent);
@@ -92,7 +92,7 @@ fn main() -> Result<()> {
         client_message = recv!(stream, buf);
         let (server, message) = if let ClientMessage::Username(username) = client_message {
             // This is the only difference from the non-augmented protocol flow
-            server.generate_client_info_partial_aug(username, &database, OsRng)
+            server.generate_client_info_partial_aug(username, &database, OsRng)?
         } else {
             panic!("Received invalid client message {:?}", client_message);
         };
@@ -151,7 +151,7 @@ fn main() -> Result<()> {
         let mut buf = [0u8; 1024];
 
         // ===== SSID ESTABLISHMENT =====
-        let (client, message) = base_client.begin();
+        let (client, message) = base_client.begin()?;
         let bytes_sent = send!(stream, message);
         CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!("[client] Sending message: Nonce, sent {} bytes", bytes_sent);
@@ -196,7 +196,7 @@ fn main() -> Result<()> {
 
         // ===== CPace substep =====
         let ci = TcpChannelIdentifier::new(stream.local_addr().unwrap(), server_socket).unwrap();
-        let (client, message) = client.generate_public_key(ci, &mut OsRng);
+        let (client, message) = client.generate_public_key(ci, &mut OsRng)?;
         let bytes_sent = send!(stream, message);
         CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!(

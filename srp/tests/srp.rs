@@ -1,4 +1,4 @@
-use rand::RngCore;
+use rand_core::TryRngCore;
 use sha2::Sha256;
 use srp::client::SrpClient;
 
@@ -15,7 +15,7 @@ fn auth_test(true_pwd: &[u8], auth_pwd: &[u8]) {
     // Begin Registration
 
     let mut salt = [0u8; 16];
-    rng.fill_bytes(&mut salt);
+    rng.try_fill_bytes(&mut salt).unwrap();
     let verifier = client.compute_verifier(username, true_pwd, &salt);
 
     // Client sends username and verifier and salt to the Server for storage
@@ -31,14 +31,14 @@ fn auth_test(true_pwd: &[u8], auth_pwd: &[u8]) {
 
     // Server retrieves verifier, salt and computes a public B value
     let mut b = [0u8; 64];
-    rng.fill_bytes(&mut b);
+    rng.try_fill_bytes(&mut b).unwrap();
     let (salt, b_pub) = (&salt, server.compute_public_ephemeral(&b, &verifier));
 
     // Server sends salt and b_pub to client
 
     // Client computes the public A value and the clientVerifier containing the key, m1, and m2
     let mut a = [0u8; 64];
-    rng.fill_bytes(&mut a);
+    rng.try_fill_bytes(&mut a).unwrap();
     let client_verifier = client
         .process_reply(&a, username, auth_pwd, salt, &b_pub)
         .unwrap();

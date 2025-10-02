@@ -8,6 +8,8 @@ pub enum Error {
     IllegalPointError,
     /// Wrapper around `password_hash`'s error type, for propagating errors should they occur
     PasswordHashing(password_hash::Error),
+    /// Failure in random number generation (entropy unavailable or RNG error)
+    Rng,
     /// PasswordHasher produced an empty hash.
     HashEmpty,
     /// PasswordHasher produced a hash of an invalid size (size was not 32 or 64 bytes)
@@ -31,6 +33,7 @@ impl fmt::Display for Error {
         match self {
             Self::IllegalPointError => write!(f, "illegal point encountered"),
             Self::PasswordHashing(error) => write!(f, "error while hashing password: {error}"),
+            Self::Rng => write!(f, "random number generator failure"),
             Self::HashEmpty => write!(f, "password hash empty"),
             Self::HashSizeInvalid => write!(f, "password hash invalid, should be 32 or 64 bytes"),
             Self::MutualAuthFail => write!(

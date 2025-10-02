@@ -2,10 +2,10 @@ use aucpace::{Client, ClientMessage, Result, Server, ServerMessage, StrongDataba
 use curve25519_dalek::ristretto::RistrettoPoint;
 use curve25519_dalek::scalar::Scalar;
 use password_hash::ParamsString;
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 use scrypt::{Params, Scrypt};
-use sha2::digest::Output;
 use sha2::Sha512;
+use sha2::digest::Output;
 use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -67,10 +67,10 @@ fn main() -> Result<()> {
 
         // buffer for receiving packets
         let mut buf = [0u8; 1024];
-        let mut base_server = Server::new(OsRng);
+        let mut base_server = Server::new(OsRng)?;
 
         // ===== SSID Establishment =====
-        let (server, message) = base_server.begin();
+        let (server, message) = base_server.begin()?;
         let bytes_sent = send!(stream, message);
         SERVER_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!("[server] Sending message: Nonce, sent {} bytes", bytes_sent);
@@ -86,9 +86,7 @@ fn main() -> Result<()> {
         client_message = recv!(stream, buf);
         let (server, message) =
             if let ClientMessage::StrongUsername { username, blinded } = client_message {
-                server
-                    .generate_client_info_strong(username, blinded, &database, OsRng)
-                    .unwrap()
+                server.generate_client_info_strong(username, blinded, &database, OsRng)?
             } else {
                 panic!("Received invalid client message {:?}", client_message);
             };
@@ -147,7 +145,7 @@ fn main() -> Result<()> {
         let mut buf = [0u8; 1024];
 
         // ===== SSID ESTABLISHMENT =====
-        let (client, message) = base_client.begin();
+        let (client, message) = base_client.begin()?;
         let bytes_sent = send!(stream, message);
         CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!("[client] Sending message: Nonce, sent {} bytes", bytes_sent);
@@ -161,7 +159,7 @@ fn main() -> Result<()> {
         };
 
         // ===== Augmentation Layer =====
-        let (client, message) = client.start_augmentation_strong(USERNAME, PASSWORD, &mut OsRng);
+        let (client, message) = client.start_augmentation_strong(USERNAME, PASSWORD, &mut OsRng)?;
         let bytes_sent = send!(stream, message);
         CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!(
@@ -192,7 +190,7 @@ fn main() -> Result<()> {
 
         // ===== CPace substep =====
         let ci = TcpChannelIdentifier::new(stream.local_addr().unwrap(), server_socket).unwrap();
-        let (client, message) = client.generate_public_key(ci, &mut OsRng);
+        let (client, message) = client.generate_public_key(ci, &mut OsRng)?;
         let bytes_sent = send!(stream, message);
         CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!(

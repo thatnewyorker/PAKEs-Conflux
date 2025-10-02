@@ -1,16 +1,16 @@
 [package]
 name = "srp"
 version = "0.7.0-pre"
-authors = ["RustCrypto Developers"]
+authors = ["Gerard Cruzado <thatnewyorker@gmail.com", "RustCrypto Developers"]
 license = "MIT OR Apache-2.0"
 description = "Secure Remote Password (SRP) protocol implementation"
 documentation = "https://docs.rs/srp"
-repository = "https://github.com/RustCrypto/PAKEs"
+repository = "https://github.com/thatnewyorker/PAKEs"
 keywords = ["crypto", "pake", "authentication"]
 categories = ["cryptography", "authentication"]
 readme = "README.md"
-edition = "2021"
-rust-version = "1.61"
+edition = "2024"
+rust-version = "1.90"
 
 [dependencies]
 num-bigint = "0.4"
@@ -18,10 +18,13 @@ generic-array = "0.14"
 digest = "0.10"
 lazy_static = "1.2"
 subtle = "2.4"
+rand_chacha = "0.9"
+rand_core = "0.9"
+
 
 [dev-dependencies]
 hex-literal = "0.4"
 num-traits = "0.2"
-rand = "0.8"
+rand = { version = "0.9", features = ["os_rng"] }
 sha1 = "0.10"
 sha2 = "0.10"

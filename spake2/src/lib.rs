@@ -243,10 +243,10 @@ pub use self::{
 use alloc::vec::Vec;
 use core::{fmt, ops::Deref, str};
 use curve25519_dalek::{edwards::EdwardsPoint as c2_Element, scalar::Scalar as c2_Scalar};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{TryCryptoRng, TryRngCore};
 
 #[cfg(feature = "getrandom")]
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 
 /// Password type.
 // TODO(tarcieri): avoid allocation?
@@ -315,7 +315,9 @@ impl<G: Group> Spake2<G> {
     #[cfg(feature = "getrandom")]
     #[must_use]
     pub fn start_a(password: &Password, id_a: &Identity, id_b: &Identity) -> (Self, Vec<u8>) {
-        Self::start_a_with_rng(password, id_a, id_b, OsRng)
+        let mut rng = OsRng;
+        Self::start_a_with_rng(password, id_a, id_b, &mut rng)
+            .expect("random number generator failure")
     }
 
     /// Start with identity `idB`.
@@ -324,7 +326,9 @@ impl<G: Group> Spake2<G> {
     #[cfg(feature = "getrandom")]
     #[must_use]
     pub fn start_b(password: &Password, id_a: &Identity, id_b: &Identity) -> (Self, Vec<u8>) {
-        Self::start_b_with_rng(password, id_a, id_b, OsRng)
+        let mut rng = OsRng;
+        Self::start_b_with_rng(password, id_a, id_b, &mut rng)
+            .expect("random number generator failure")
     }
 
     /// Start with symmetric identity.
@@ -333,40 +337,42 @@ impl<G: Group> Spake2<G> {
     #[cfg(feature = "getrandom")]
     #[must_use]
     pub fn start_symmetric(password: &Password, id_s: &Identity) -> (Self, Vec<u8>) {
-        Self::start_symmetric_with_rng(password, id_s, OsRng)
+        let mut rng = OsRng;
+        Self::start_symmetric_with_rng(password, id_s, &mut rng)
+            .expect("random number generator failure")
     }
 
     /// Start with identity `idA` and the provided cryptographically secure RNG.
     #[must_use]
-    pub fn start_a_with_rng(
+    pub fn start_a_with_rng<R: TryCryptoRng + TryRngCore>(
         password: &Password,
         id_a: &Identity,
         id_b: &Identity,
-        mut csrng: impl CryptoRng + RngCore,
-    ) -> (Self, Vec<u8>) {
-        let xy_scalar: G::Scalar = G::random_scalar(&mut csrng);
-        Self::start_a_internal(password, id_a, id_b, xy_scalar)
+        rng: &mut R,
+    ) -> core::result::Result<(Self, Vec<u8>), Error> {
+        let xy_scalar: G::Scalar = G::random_scalar(rng)?;
+        Ok(Self::start_a_internal(password, id_a, id_b, xy_scalar))
     }
 
     /// Start with identity `idB` and the provided cryptographically secure RNG.
-    pub fn start_b_with_rng(
+    pub fn start_b_with_rng<R: TryCryptoRng + TryRngCore>(
         password: &Password,
         id_a: &Identity,
         id_b: &Identity,
-        mut csrng: impl CryptoRng + RngCore,
-    ) -> (Self, Vec<u8>) {
-        let xy_scalar: G::Scalar = G::random_scalar(&mut csrng);
-        Self::start_b_internal(password, id_a, id_b, xy_scalar)
+        rng: &mut R,
+    ) -> core::result::Result<(Self, Vec<u8>), Error> {
+        let xy_scalar: G::Scalar = G::random_scalar(rng)?;
+        Ok(Self::start_b_internal(password, id_a, id_b, xy_scalar))
     }
 
     /// Start with symmetric identity and the provided cryptographically secure RNG.
-    pub fn start_symmetric_with_rng(
+    pub fn start_symmetric_with_rng<R: TryCryptoRng + TryRngCore>(
         password: &Password,
         id_s: &Identity,
-        mut csrng: impl CryptoRng + RngCore,
-    ) -> (Self, Vec<u8>) {
-        let xy_scalar: G::Scalar = G::random_scalar(&mut csrng);
-        Self::start_symmetric_internal(password, id_s, xy_scalar)
+        rng: &mut R,
+    ) -> core::result::Result<(Self, Vec<u8>), Error> {
+        let xy_scalar: G::Scalar = G::random_scalar(rng)?;
+        Ok(Self::start_symmetric_internal(password, id_s, xy_scalar))
     }
 
     /// Finish SPAKE2.
