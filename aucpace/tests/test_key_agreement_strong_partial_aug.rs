@@ -132,7 +132,11 @@ fn test_key_agreement() -> Result<()> {
         panic!("Received invalid server message {:?}", server_message);
     };
 
-    // assert that both threads arrived at the same key
+    // assert that both parties derived the same, non-zero 64-byte key
+    assert_eq!(client_key.as_slice().len(), 64);
+    assert_eq!(server_key.as_slice().len(), 64);
+    assert!(client_key.as_slice().iter().any(|&b| b != 0));
+    assert!(server_key.as_slice().iter().any(|&b| b != 0));
     assert_eq!(client_key, server_key);
 
     Ok(())
@@ -178,7 +182,11 @@ fn test_key_agreement_implicit_auth() -> Result<()> {
         panic!("Received invalid server message {:?}", server_message);
     };
 
-    // assert that both threads arrived at the same key
+    // assert that both parties derived the same, non-zero 64-byte key
+    assert_eq!(client_key.as_slice().len(), 64);
+    assert_eq!(server_key.as_slice().len(), 64);
+    assert!(client_key.as_slice().iter().any(|&b| b != 0));
+    assert!(server_key.as_slice().iter().any(|&b| b != 0));
     assert_eq!(client_key, server_key);
 
     Ok(())
@@ -223,7 +231,11 @@ fn test_key_agreement_prestablished_ssid() -> Result<()> {
         panic!("Received invalid server message {:?}", server_message);
     };
 
-    // assert that both threads arrived at the same key
+    // assert that both parties derived the same, non-zero 64-byte key
+    assert_eq!(client_key.as_slice().len(), 64);
+    assert_eq!(server_key.as_slice().len(), 64);
+    assert!(client_key.as_slice().iter().any(|&b| b != 0));
+    assert!(server_key.as_slice().iter().any(|&b| b != 0));
     assert_eq!(client_key, server_key);
 
     Ok(())
@@ -255,7 +267,11 @@ fn test_key_agreement_prestablished_ssid_implicit_auth() -> Result<()> {
         panic!("Received invalid server message {:?}", server_message);
     };
 
-    // assert that both threads arrived at the same key
+    // assert that both parties derived the same, non-zero 64-byte key
+    assert_eq!(client_key.as_slice().len(), 64);
+    assert_eq!(server_key.as_slice().len(), 64);
+    assert!(client_key.as_slice().iter().any(|&b| b != 0));
+    assert!(server_key.as_slice().iter().any(|&b| b != 0));
     assert_eq!(client_key, server_key);
 
     Ok(())

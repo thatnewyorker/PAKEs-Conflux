@@ -184,16 +184,12 @@ pub fn scalar_from_hash(pw_hash: &PasswordHash<'_>) -> Result<Scalar> {
     // support both 32 and 64 byte hashes
     match hash_bytes.len() {
         32 => {
-            let arr = hash_bytes
-                .try_into()
-                .expect("slice length invariant broken");
+            let arr: [u8; 32] = hash_bytes.try_into().map_err(|_| Error::HashSizeInvalid)?;
             Ok(Scalar::from_bytes_mod_order(arr))
         }
         64 => {
-            let arr = hash_bytes
-                .try_into()
-                .expect("slice length invariant broken");
-            Ok(Scalar::from_bytes_mod_order_wide(arr))
+            let arr: [u8; 64] = hash_bytes.try_into().map_err(|_| Error::HashSizeInvalid)?;
+            Ok(Scalar::from_bytes_mod_order_wide(&arr))
         }
         _ => Err(Error::HashSizeInvalid),
     }

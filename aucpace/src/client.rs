@@ -861,11 +861,11 @@ where
         let sk1 = compute_first_session_key::<D>(self.ssid, self.priv_key, server_pubkey);
         let (ta, tb) = compute_authenticator_messages::<D>(self.ssid, sk1);
         let next_step = AuCPaceClientExpMutAuth::new(self.ssid, sk1, ta);
-        let message = ClientMessage::Authenticator(
-            tb.as_slice()
-                .try_into()
-                .expect("array length invariant broken"),
-        );
+        let tb_arr = tb
+            .as_slice()
+            .try_into()
+            .map_err(|_| Error::HashSizeInvalid)?;
+        let message = ClientMessage::Authenticator(tb_arr);
         Ok((next_step, message))
     }
 

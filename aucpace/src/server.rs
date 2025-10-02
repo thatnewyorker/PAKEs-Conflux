@@ -472,8 +472,7 @@ where
         // It is okay to expect here because SaltString has a buffer of 64 bytes by requirement
         // from the PHC spec. 48 bytes of data when encoded as base64 transform to 64 bytes.
         // This gives us the most entropy possible from the hash in the SaltString.
-        let salt = SaltString::encode_b64(&hash_bytes[..48])
-            .expect("SaltString maximum length invariant broken");
+        let salt = SaltString::encode_b64(&hash_bytes[..48]).map_err(Error::PasswordHashing)?;
 
         let message = ServerMessage::AugmentationInfo {
             group: "ristretto255",
@@ -680,11 +679,11 @@ where
         let (ta, tb) = compute_authenticator_messages::<D>(self.ssid, self.sk1);
         if tb.ct_eq(&client_authenticator).into() {
             let sk = compute_session_key::<D>(self.ssid, self.sk1);
-            let message = ServerMessage::Authenticator(
-                ta.as_slice()
-                    .try_into()
-                    .expect("array length invariant broken"),
-            );
+            let ta_arr = ta
+                .as_slice()
+                .try_into()
+                .map_err(|_| Error::HashSizeInvalid)?;
+            let message = ServerMessage::Authenticator(ta_arr);
             Ok((sk, message))
         } else {
             Err(Error::MutualAuthFail)
@@ -889,6 +888,51 @@ mod tests {
             assert_eq!(e, Error::IllegalPointError);
         } else {
             panic!("Client accepted illegal point.");
+        }
+    }
+
+    #[test]
+    #[cfg(all(feature = "sha2", feature = "getrandom"))]
+    fn test_server_lookup_failed_returns_ok() {
+        use crate::utils::H0;
+        use rand::rngs::OsRng;
+
+        // Fake DB that always returns None for lookup_verifier to force lookup_failed path
+        struct NoneDb;
+        impl Database for NoneDb {
+            type PasswordVerifier = RistrettoPoint;
+
+            fn lookup_verifier(
+                &self,
+                _username: &[u8],
+            ) -> Option<(Self::PasswordVerifier, SaltString, ParamsString)> {
+                None
+            }
+
+            fn store_verifier(
+                &mut self,
+                _username: &[u8],
+                _salt: SaltString,
+                _uad: Option<&[u8]>,
+                _verifier: Self::PasswordVerifier,
+                _params: ParamsString,
+            ) {
+                unimplemented!()
+            }
+        }
+
+        let ssid = H0::<sha2::Sha512>().finalize();
+        let aug_server: AuCPaceServerAugLayer<sha2::Sha512, 16> =
+            AuCPaceServerAugLayer::new(ServerSecret(25519), ssid);
+
+        // This should take the lookup_failed path and not panic; it should return Ok
+        let res = aug_server.generate_client_info(b"missing-user", &NoneDb, OsRng);
+
+        assert!(res.is_ok());
+        if let Ok((_next_step, ServerMessage::AugmentationInfo { .. })) = res {
+            // ok
+        } else {
+            panic!("Expected AugmentationInfo on lookup_failed path");
         }
     }
 }
