@@ -99,7 +99,7 @@ fn main() -> Result<()> {
 
         // ===== CPace substep =====
         let ci = TcpChannelIdentifier::new(client_addr, server_socket).unwrap();
-        let (server, message) = server.generate_public_key(ci);
+        let (server, message) = server.generate_public_key(ci)?;
         let bytes_sent = send!(stream, message);
         SERVER_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!(

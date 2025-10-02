@@ -16,6 +16,9 @@ pub enum Error {
 
     /// Wrong length
     WrongLength,
+
+    /// Random number generator failure
+    Rng,
 }
 
 impl fmt::Display for Error {
@@ -24,6 +27,7 @@ impl fmt::Display for Error {
             Self::BadSide => fmt.write_str("bad side"),
             Self::CorruptMessage => fmt.write_str("corrupt message"),
             Self::WrongLength => fmt.write_str("invalid length"),
+            Self::Rng => fmt.write_str("random number generator failure"),
         }
     }
 }

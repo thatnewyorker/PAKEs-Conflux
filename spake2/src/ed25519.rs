@@ -67,9 +67,7 @@ impl Group for Ed25519Group {
         T: TryRngCore + TryCryptoRng,
     {
         let mut seed = [0u8; 64];
-        cspring
-            .try_fill_bytes(&mut seed)
-            .map_err(|_| Error::WrongLength)?;
+        cspring.try_fill_bytes(&mut seed).map_err(|_| Error::Rng)?;
         let digest = Sha512::digest(&seed);
         let mut wide = [0u8; 64];
         wide.copy_from_slice(&digest);

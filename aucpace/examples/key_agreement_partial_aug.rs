@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     } = registration
     {
         database.store_verifier(username, salt, None, verifier, params);
-        let (private, public) = base_server.generate_long_term_keypair();
+        let (private, public) = base_server.generate_long_term_keypair()?;
         database
             .store_long_term_keypair(username, private, public)
             .unwrap();
@@ -105,7 +105,7 @@ fn main() -> Result<()> {
 
         // ===== CPace substep =====
         let ci = TcpChannelIdentifier::new(client_addr, server_socket).unwrap();
-        let (server, message) = server.generate_public_key(ci);
+        let (server, message) = server.generate_public_key(ci)?;
         let bytes_sent = send!(stream, message);
         SERVER_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
         println!(

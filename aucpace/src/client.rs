@@ -50,7 +50,7 @@ where
     H: PasswordHasher,
     CSPRNG: TryRngCore + TryCryptoRng,
 {
-    /// Create new server
+    /// Create a new client
     pub const fn new(rng: CSPRNG) -> Self {
         Self {
             rng,
@@ -115,7 +115,7 @@ where
     ///   e.g. if you have a username limit of 20 and password limit of 60, 81 would be the right value.
     ///
     /// # Return:
-    /// - Ok([`messsage`](ClientMessage::Registration)): the message to send to the server
+    /// - Ok([`message`](ClientMessage::Registration)): the message to send to the server
     /// - Err([`Error::PasswordHashing`](Error::PasswordHashing) | [`Error::HashEmpty`](Error::HashEmpty) | [`Error::HashSizeInvalid`](Error::HashSizeInvalid)):
     ///   one of the three error variants that can result from the password hashing process
     ///
@@ -173,7 +173,7 @@ where
     ///   e.g. if you have a username limit of 20 and password limit of 60, 81 would be the right value.
     ///
     /// # Return:
-    /// - Ok([`messsage`](ClientMessage::Registration)): the message to send to the server
+    /// - Ok([`message`](ClientMessage::Registration)): the message to send to the server
     /// - Err([`Error::PasswordHashing`](Error::PasswordHashing) | [`Error::HashEmpty`](Error::HashEmpty) | [`Error::HashSizeInvalid`](Error::HashSizeInvalid)):
     ///   one of the three error variants that can result from the password hashing process
     ///
@@ -226,7 +226,7 @@ where
     /// - `hasher` - the hasher to use for hashing the username and password.
     ///
     /// # Return:
-    /// - Ok([`messsage`](ClientMessage::Registration)): the message to send to the server
+    /// - Ok([`message`](ClientMessage::Registration)): the message to send to the server
     /// - Err([`Error::PasswordHashing`](Error::PasswordHashing) | [`Error::HashEmpty`](Error::HashEmpty) | [`Error::HashSizeInvalid`](Error::HashSizeInvalid)):
     ///   one of the three error variants that can result from the password hashing process
     ///
@@ -282,7 +282,7 @@ where
     ///   e.g. if you have a username limit of 20 and password limit of 60, 81 would be the right value.
     ///
     /// # Return:
-    /// - Ok([`messsage`](ClientMessage::Registration)): the message to send to the server
+    /// - Ok([`message`](ClientMessage::Registration)): the message to send to the server
     /// - Err([`Error::PasswordHashing`](Error::PasswordHashing) | [`Error::HashEmpty`](Error::HashEmpty) | [`Error::HashSizeInvalid`](Error::HashSizeInvalid)):
     ///   one of the three error variants that can result from the password hashing process
     ///
@@ -1040,7 +1040,7 @@ pub enum ClientMessage<'a, const K1: usize> {
         #[cfg_attr(feature = "serde", serde(with = "serde_paramsstring"))]
         params: ParamsString,
 
-        /// The verifier computer from the user's password
+        /// The verifier computed from the user's password
         verifier: RistrettoPoint,
     },
 
@@ -1058,7 +1058,7 @@ pub enum ClientMessage<'a, const K1: usize> {
         #[cfg_attr(feature = "serde", serde(with = "serde_paramsstring"))]
         params: ParamsString,
 
-        /// The verifier computer from the user's password
+        /// The verifier computed from the user's password
         verifier: RistrettoPoint,
     },
 }

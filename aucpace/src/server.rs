@@ -247,10 +247,10 @@ where
         username: U,
         database: &DB,
         mut rng: CSPRNG,
-    ) -> (
+    ) -> Result<(
         AuCPaceServerCPaceSubstep<D, CSPRNG, K1>,
         ServerMessage<'static, K1>,
-    )
+    )>
     where
         U: AsRef<[u8]>,
         DB: Database<PasswordVerifier = RistrettoPoint>
@@ -260,7 +260,7 @@ where
         let user = username.as_ref();
         let (prs, message) = if let Some((x, x_pub)) = database.lookup_long_term_keypair(user) {
             // generate the prs and client message
-            self.generate_prs(user, database, &mut rng, x, x_pub)
+            self.generate_prs(user, database, &mut rng, x, x_pub)?
         } else {
             // if the user does not have a keypair stored then we generate a random point on the
             // curve to be the public key, and handle the failed lookup as normal
@@ -271,11 +271,11 @@ where
                 hasher.update(&seed);
                 RistrettoPoint::from_hash(hasher)
             };
-            self.lookup_failed(user, x_pub, &mut rng)
+            self.lookup_failed(user, x_pub, &mut rng)?
         };
         let next_step = AuCPaceServerCPaceSubstep::new(self.ssid, prs, rng);
 
-        (next_step, message)
+        Ok((next_step, message))
     }
 
     /// Accept the user's username, and blinded point U and generate the `ClientInfo` for the response.
@@ -557,9 +557,9 @@ where
     /// - `rng` - the CSPRNG used when generating the public/private keypair
     ///
     /// # Return:
-    /// ([`next_step`](AuCPaceServerRecvClientKey), [`messsage`](ServerMessage::PublicKey))
+    /// ([`next_step`](AuCPaceServerRecvClientKey), [`message`](ServerMessage::PublicKey))
     /// - [`next_step`](AuCPaceServerRecvClientKey): the server waiting for the client's public key
-    /// - [`messsage`](ServerMessage::PublicKey): the message to send to the client
+    /// - [`message`](ServerMessage::PublicKey): the message to send to the client
     ///
     pub fn generate_public_key<CI: AsRef<[u8]>>(
         mut self,

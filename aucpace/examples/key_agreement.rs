@@ -192,12 +192,11 @@ fn main() -> Result<()> {
         // relying on `?` at the call site. This shows explicit error handling
         // for `Error::Rng`. In real code you may prefer `?` to propagate.
         let mut example_rng = rand::rngs::OsRng;
-        match client.generate_public_key(ci, &mut example_rng) {
+        let (client, bytes_sent) = match client.generate_public_key(ci, &mut example_rng) {
             Ok((client, message)) => {
                 let bytes_sent = send!(stream, message);
                 CLIENT_BYTES_SENT.fetch_add(bytes_sent, Ordering::SeqCst);
-                // shadow `client` for use in the rest of the flow
-                client
+                (client, bytes_sent)
             }
             Err(e) => {
                 eprintln!(

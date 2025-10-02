@@ -106,8 +106,8 @@ dual licensed as above, without any additional terms or conditions.
 [rustc-image]: https://img.shields.io/badge/rustc-1.60+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260045-PAKEs
-[build-image]: https://github.com/thatnewyorker/PAKEs/actions/workflows/spake2.yml/badge.svg
-[build-link]: https://github.com/thatnewyorker/PAKEs/actions/workflows/spake2.yml
+[build-image]: https://github.com/thatnewyorker/PAKEs-Conflux/actions/workflows/spake2.yml/badge.svg
+[build-link]: https://github.com/thatnewyorker/PAKEs-Conflux/actions/workflows/spake2.yml
 
 [//]: # (general links)
 
