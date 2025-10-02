@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated examples and tests to demonstrate and handle the fallible RNG APIs (using `?` or explicit `match`), and added doc examples that show patterns such as:
   - Propagating errors: `let kv = generate_keypair(&mut rng, ...)?;`
   - Explicit handling: `match generate_nonce(&mut rng) { Ok(n) => ..., Err(Error::Rng) => ... }`
+- Removed library panics in invariant-bound paths:
+  - Server fallback salt generation (`server::lookup_failed`) no longer panics on `SaltString::encode_b64` and now maps failures to `Err(Error::PasswordHashing)`.
+  - Digest-to-array conversions in client/server authenticator handling and in `utils::scalar_from_hash` are now fallible and return `Err(Error::HashSizeInvalid)` instead of panicking on `try_into()`.
+
+### Added
+- New integration tests that exercise:
+  - Successful client/server handshakes across normal, pre-established SSID, implicit-auth, partial augmentation, strong augmentation, and strong+partial variants (when features are enabled), asserting session key equality explicitly.
+  - Lookup failure paths: `lookup_failed` and `lookup_failed_strong` now covered by tests to ensure stable, non-panicking behavior.
+- Strengthened assertions in handshake tests to verify session key length and that derived keys are not all-zero, in addition to equality checks.
 
 ### Breaking Changes
 - Several public functions changed their signatures to return `Result` where they previously were infallible. This is a breaking change for downstream users — callers must now handle or propagate RNG-related errors (e.g., `Error::Rng`).

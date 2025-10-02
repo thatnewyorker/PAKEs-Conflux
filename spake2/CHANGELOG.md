@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Make RNG usage fallible: cryptographic RNG entry points that previously assumed infallible generation are now fallible and return `Result`. In particular, group RNG entry points such as `random_scalar` and any constructors or helpers that obtain randomness will propagate RNG failures rather than panicking. Callers must handle or propagate RNG-related errors (for example with `?`), or explicitly match the returned `Result`.
 - Examples and tests updated to demonstrate handling fallible RNG APIs (propagate with `?` or match on the `Result` and handle the error case).
+- Removed panic-prone invariant-based unwraps in workspace crates where applicable; conversions now return errors instead of panicking. For `spake2`, the primary change is RNG fallibility and error propagation.
+- Improved workspace test coverage: added integration tests (in `aucpace`) for handshake variants and lookup-failure paths to ensure stable, non-panicking behavior across the workspace.
 
 ### Breaking Changes
 - Several public APIs changed their signatures to return `Result` where they previously were infallible. This is a breaking change for downstream code: update call sites to handle the new fallible signatures.
