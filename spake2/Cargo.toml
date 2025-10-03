@@ -26,7 +26,7 @@ sha2 = { version = "0.10.9", default-features = false }
 hkdf = { version = "0.12.4", default-features = false }
 secrecy = { version = "0.10", default-features = false }
 zeroize = { version = "1.7", default-features = false, features = ["zeroize_derive"] }
-secret-utils = { version = "0.1.0", path = "../secret-utils", default-features = false, optional = true }
+secret-utils = { version = "0.1.0", path = "../secret-utils", default-features = false }
 
 [dev-dependencies]
 bencher = "0.1.5"
@@ -36,8 +36,7 @@ num-bigint = "0.4.6"
 [features]
 default = ["getrandom"]
 getrandom = ["dep:rand", "rand/os_rng"]
-# Optional feature to integrate secret handling utilities without forcing them on all builds.
-secrets = ["dep:secret-utils"]
+
 std = []
 
 [package.metadata.docs.rs]

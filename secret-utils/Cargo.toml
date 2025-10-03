@@ -13,7 +13,7 @@ path = "src/lib.rs"
 
 [features]
 # Default to alloc-enabled, no_std-friendly configuration.
-default = []
+default = ["alloc"]
 alloc = []
 # Convenience feature to opt into std if desired by dependents.
 std = ["alloc"]

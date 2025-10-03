@@ -883,13 +883,18 @@ where
     /// # Return:
     /// `sk`: the session key reached by the `AuCPace` protocol
     ///
-    pub fn implicit_auth(self, server_pubkey: RistrettoPoint) -> Result<Output<D>> {
+    pub fn implicit_auth(
+        self,
+        server_pubkey: RistrettoPoint,
+    ) -> Result<secret_utils::wrappers::SecretKey> {
         if server_pubkey.is_identity() {
             return Err(Error::IllegalPointError);
         }
 
         let sk1 = compute_first_session_key::<D>(self.ssid, self.priv_key, server_pubkey);
-        Ok(compute_session_key::<D>(self.ssid, sk1))
+        Ok(secret_utils::wrappers::SecretKey::from(
+            compute_session_key::<D>(self.ssid, sk1).as_slice().to_vec(),
+        ))
     }
 }
 
@@ -931,13 +936,20 @@ where
     /// - Err([`Error::MutualAuthFail`](Error::MutualAuthFail)): an error if the authenticator we computed doesn't match
     ///     the server's authenticator, compared in constant time.
     ///
-    pub fn receive_server_authenticator(self, server_authenticator: [u8; 64]) -> Result<Output<D>> {
+    pub fn receive_server_authenticator(
+        self,
+        server_authenticator: [u8; 64],
+    ) -> Result<secret_utils::wrappers::SecretKey> {
         if self
             .server_authenticator
             .ct_eq(&server_authenticator)
             .into()
         {
-            Ok(compute_session_key::<D>(self.ssid, self.sk1))
+            Ok(secret_utils::wrappers::SecretKey::from(
+                compute_session_key::<D>(self.ssid, self.sk1)
+                    .as_slice()
+                    .to_vec(),
+            ))
         } else {
             Err(Error::MutualAuthFail)
         }

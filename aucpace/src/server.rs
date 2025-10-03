@@ -640,14 +640,19 @@ where
     /// # Return:
     /// `sk`: the session key reached by the `AuCPace` protocol
     ///
-    pub fn implicit_auth(self, client_pubkey: RistrettoPoint) -> Result<Output<D>> {
+    pub fn implicit_auth(
+        self,
+        client_pubkey: RistrettoPoint,
+    ) -> Result<secret_utils::wrappers::SecretKey> {
         // check for the neutral point
         if client_pubkey.is_identity() {
             return Err(Error::IllegalPointError);
         }
 
         let sk1 = compute_first_session_key::<D>(self.ssid, self.priv_key, client_pubkey);
-        Ok(compute_session_key::<D>(self.ssid, sk1))
+        Ok(secret_utils::wrappers::SecretKey::from(
+            compute_session_key::<D>(self.ssid, sk1).as_slice().to_vec(),
+        ))
     }
 }
 
@@ -688,7 +693,10 @@ where
     pub fn receive_client_authenticator(
         self,
         client_authenticator: [u8; 64],
-    ) -> Result<(Output<D>, ServerMessage<'static, K1>)> {
+    ) -> Result<(
+        secret_utils::wrappers::SecretKey,
+        ServerMessage<'static, K1>,
+    )> {
         let (ta, tb) = compute_authenticator_messages::<D>(self.ssid, self.sk1);
         if tb.ct_eq(&client_authenticator).into() {
             let sk = compute_session_key::<D>(self.ssid, self.sk1);
@@ -697,7 +705,10 @@ where
                 .try_into()
                 .map_err(|_| Error::HashSizeInvalid)?;
             let message = ServerMessage::Authenticator(ta_arr);
-            Ok((sk, message))
+            Ok((
+                secret_utils::wrappers::SecretKey::from(sk.as_slice().to_vec()),
+                message,
+            ))
         } else {
             Err(Error::MutualAuthFail)
         }

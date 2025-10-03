@@ -37,7 +37,7 @@ scrypt = { version = "0.11.0", default-features = false, optional = true, featur
 sha2 = { version = "0.10.9", default-features = false, optional = true }
 secrecy = { version = "0.10", default-features = false }
 zeroize = { version = "1.7", default-features = false, features = ["zeroize_derive"] }
-secret-utils = { version = "0.1.0", path = "../secret-utils", default-features = false, optional = true }
+secret-utils = { version = "0.1.0", path = "../secret-utils", default-features = false }
 
 [dev-dependencies]
 bincode = "2"
@@ -56,7 +56,7 @@ strong_aucpace = []
 zeroize = ["curve25519-dalek/zeroize"]
 serde = ["dep:serde", "serde-byte-array", "curve25519-dalek/serde"]
 getrandom = ["dep:rand", "rand/os_rng"]
-secrets = ["dep:secret-utils"]
+
 
 [[example]]
 name = "key_agreement"

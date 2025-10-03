@@ -121,8 +121,14 @@ pub mod wrappers {
 
     /// Zeroizing wrapper for derived session keys or other key material.
     #[cfg(feature = "alloc")]
-    #[derive(Zeroize, ZeroizeOnDrop)]
+    #[derive(Zeroize, ZeroizeOnDrop, PartialEq)]
     pub struct SecretKey(Vec<u8>);
+
+    impl core::fmt::Debug for SecretKey {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            write!(f, "SecretKey([redacted], len={})", self.0.len())
+        }
+    }
 
     #[cfg(feature = "alloc")]
     impl SecretKey {
@@ -153,6 +159,7 @@ pub mod wrappers {
         }
     }
 
+    // Added to support transparent slice access to key bytes.
     #[cfg(feature = "alloc")]
     impl Deref for SecretKey {
         type Target = [u8];
@@ -162,6 +169,7 @@ pub mod wrappers {
         }
     }
 
+    // Added to allow constructing SecretKey from existing Vec<u8> without copying.
     #[cfg(feature = "alloc")]
     impl From<Vec<u8>> for SecretKey {
         fn from(v: Vec<u8>) -> Self {
@@ -194,4 +202,43 @@ pub mod test_utils {
     //! - Utilities to construct scoped secrets for lifecycle tests
     //!
     //! Intentionally empty in this initial scaffold.
+}
+
+#[cfg(test)]
+mod tests {
+    use super::wrappers::{SecretBytes, SecretKey};
+    use alloc::format;
+    use alloc::vec;
+    use zeroize::Zeroize;
+
+    #[test]
+    fn secret_key_zeroize_sets_to_zero() {
+        let mut key = SecretKey::new(vec![1u8, 2, 3, 4, 5]);
+        // Ensure it's initially non-zero
+        assert!(key.expose().iter().any(|&b| b != 0));
+        // Zeroize and verify all bytes are zero
+        key.zeroize();
+        assert!(key.expose().iter().all(|&b| b == 0));
+    }
+
+    #[test]
+    fn secret_bytes_zeroize_sets_to_zero() {
+        let mut bytes = SecretBytes::new(vec![10u8, 11, 12, 13]);
+        // Ensure it's initially non-zero
+        assert!(bytes.expose().iter().any(|&b| b != 0));
+        // Zeroize and verify all bytes are zero
+        bytes.zeroize();
+        assert!(bytes.expose().iter().all(|&b| b == 0));
+    }
+
+    #[test]
+    fn secret_key_debug_is_redacted() {
+        let key = SecretKey::new(vec![9u8, 8, 7]);
+        let s = format!("{:?}", key);
+        // Ensure the debug output is redacted and includes the length
+        assert!(s.contains("SecretKey([redacted]"));
+        assert!(s.contains("len=3"));
+        // Ensure raw contents are not present
+        assert!(!s.contains("9, 8, 7"));
+    }
 }

@@ -234,6 +234,7 @@ mod ed25519;
 mod error;
 mod group;
 
+use secret_utils::wrappers::SecretKey;
 use zeroize::Zeroize;
 
 pub use self::{
@@ -384,7 +385,7 @@ impl<G: Group> Spake2<G> {
     }
 
     /// Finish SPAKE2.
-    pub fn finish(self, msg2: &[u8]) -> Result<Vec<u8>> {
+    pub fn finish(self, msg2: &[u8]) -> Result<SecretKey> {
         if msg2.len() != 1 + G::element_length() {
             return Err(Error::WrongLength);
         }
@@ -429,7 +430,7 @@ impl<G: Group> Spake2<G> {
         //key = sha256(transcript).digest()
         // note that both sides must use the same order
 
-        Ok(match self.side {
+        Ok(SecretKey::from(match self.side {
             Side::A { id_a, id_b } => ed25519::hash_ab(
                 self.password_vec.as_ref(),
                 &id_a,
@@ -453,7 +454,7 @@ impl<G: Group> Spake2<G> {
                 &msg2[1..],
                 &key_bytes,
             ),
-        })
+        }))
     }
 
     fn start_internal(side: Side, password: &Password, xy_scalar: G::Scalar) -> (Self, Vec<u8>) {
@@ -763,7 +764,7 @@ mod tests {
 
         let key1 = s1.finish(&msg2).unwrap();
         let key2 = s2.finish(&msg1).unwrap();
-        assert_eq!(key1, key2);
+        assert_eq!(key1.as_ref(), key2.as_ref());
         assert_eq!(
             hex::encode(key1),
             "712295de7219c675ddd31942184aa26e0a957cf216bc230d165b215047b520c1"
