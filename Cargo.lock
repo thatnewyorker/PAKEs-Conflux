@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "aucpace-conflux"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bincode",
  "curve25519-dalek",
@@ -22,7 +22,6 @@ dependencies = [
  "rand",
  "rand_core 0.9.3",
  "scrypt",
- "secrecy",
  "secret-utils",
  "serde",
  "serde-byte-array",
@@ -473,17 +472,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "secrecy"
-version = "0.10.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e891af845473308773346dc847b2c23ee78fe442e0472ac50e22a18a93d3ae5a"
-dependencies = [
- "zeroize",
-]
-
-[[package]]
 name = "secret-utils"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "zeroize",
 ]
@@ -557,7 +547,7 @@ dependencies = [
 
 [[package]]
 name = "spake2-conflux"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "bencher",
  "curve25519-dalek",
@@ -566,7 +556,6 @@ dependencies = [
  "num-bigint",
  "rand",
  "rand_core 0.9.3",
- "secrecy",
  "secret-utils",
  "sha2",
  "zeroize",
@@ -583,7 +572,7 @@ dependencies = [
 
 [[package]]
 name = "srp-conflux"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "digest",
  "generic-array 1.2.0",
@@ -594,7 +583,6 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rand_core 0.9.3",
- "secrecy",
  "secret-utils",
  "sha1",
  "sha2",

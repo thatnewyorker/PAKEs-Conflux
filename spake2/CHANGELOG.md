@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+- Session key handling: session keys are now returned as `secret_utils::wrappers::SecretKey` with zeroization-on-drop and redacted Debug. Borrow bytes via `AsRef<[u8]>`/deref.
+- Dependencies: bumped `secret-utils` to `0.2.x` and removed the unused `secrecy` dependency from this crate.
 - Make RNG usage fallible: cryptographic RNG entry points that previously assumed infallible generation are now fallible and return `Result`. In particular, group RNG entry points such as `random_scalar` and any constructors or helpers that obtain randomness will propagate RNG failures rather than panicking. Callers must handle or propagate RNG-related errors (for example with `?`), or explicitly match the returned `Result`.
 - Examples and tests updated to demonstrate handling fallible RNG APIs (propagate with `?` or match on the `Result` and handle the error case).
 - Removed panic-prone invariant-based unwraps in workspace crates where applicable; conversions now return errors instead of panicking. For `spake2`, the primary change is RNG fallibility and error propagation.
@@ -13,8 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 - Several public APIs changed their signatures to return `Result` where they previously were infallible. This is a breaking change for downstream code: update call sites to handle the new fallible signatures.
+- Equality removed for secrets: `SecretKey` no longer implements `PartialEq`. Use `SecretKey::ct_eq(&other)` for explicit comparison.
 
 ### Migration notes
+- Replace any uses of `==`/`!=` on `SecretKey` with `SecretKey::ct_eq(&other)`.
+- Update Cargo.toml for release: set `secret-utils = "0.2"` (remove any local `path` dependency when publishing).
 - Update call sites to handle the new `Result` signatures:
   - Use the `?` operator in fallible contexts to propagate RNG failures.
   - Or explicitly match on the returned `Result` and handle RNG failures gracefully.

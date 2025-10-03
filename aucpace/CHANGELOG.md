@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed library panics in invariant-bound paths:
   - Server fallback salt generation (`server::lookup_failed`) no longer panics on `SaltString::encode_b64` and now maps failures to `Err(Error::PasswordHashing)`.
   - Digest-to-array conversions in client/server authenticator handling and in `utils::scalar_from_hash` are now fallible and return `Err(Error::HashSizeInvalid)` instead of panicking on `try_into()`.
+- Session key handling: session keys are now returned as `secret_utils::wrappers::SecretKey` with zeroization-on-drop and redacted Debug. Updated examples and docs to use borrowed bytes via `AsRef<[u8]>`/deref.
+- Dependencies: bumped `secret-utils` to `0.2.x` and removed the unused `secrecy` dependency from this crate.
 
 ### Added
 - New integration tests that exercise:
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 - Several public functions changed their signatures to return `Result` where they previously were infallible. This is a breaking change for downstream users — callers must now handle or propagate RNG-related errors (e.g., `Error::Rng`).
+- Equality removed for secrets: `SecretKey` no longer implements `PartialEq`. Downstream code must use the explicit `SecretKey::ct_eq(&other)` method to compare keys.
 
 ### Migration notes
 - Update call sites to handle the new `Result` signatures:
@@ -32,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Or explicitly match on the returned `Result` and handle `Error::Rng`.
 - Update examples and integration code to construct and pass RNGs as before (e.g., `OsRng`), but now treat RNG calls as fallible.
 - When publishing, consider a version bump (semver: minor or major depending on current versioning policy) and add a short migration guide linking to the updated examples.
+- Replace any uses of `==`/`!=` on `SecretKey` with `SecretKey::ct_eq(&other)`.
+- Update Cargo.toml: set `secret-utils = "0.2"` (and remove any `path = "../secret-utils"` for released crates); remove the `secrecy` dependency if it was unused.
 
 ## 0.1.1 (2023-07-27)
 ### Changed

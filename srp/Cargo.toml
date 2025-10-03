@@ -1,6 +1,6 @@
 [package]
 name = "srp-conflux"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Gerard Cruzado <thatnewyorker@gmail.com>", "RustCrypto Developers"]
 license = "MIT OR Apache-2.0"
 description = "Secure Remote Password (SRP) protocol implementation"
@@ -23,9 +23,9 @@ lazy_static = "1.5"
 subtle = "2.6.1"
 rand_chacha = "0.9.0"
 rand_core = "0.9.3"
-secrecy = { version = "0.10", default-features = false }
+
 zeroize = { version = "1.7", default-features = false, features = ["zeroize_derive"] }
-secret-utils = { version = "0.1.0", path = "../secret-utils", default-features = false }
+secret-utils = { version = "0.2", default-features = false }
 
 
 [dev-dependencies]
