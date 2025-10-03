@@ -49,12 +49,125 @@ extern crate alloc;
 /// scalar wrappers) with drop-time zeroization and constrained exposure.
 /// No items are defined yet; content will be added in subsequent phases.
 pub mod wrappers {
-    //! Future contents:
-    //! - Secret byte buffers (passwords, derived keys)
-    //! - Scalar wrappers for protocol internals
-    //! - Controlled exposure helpers
+    //! Zeroizing secret wrappers for byte-oriented secrets.
     //!
-    //! Intentionally empty in this initial scaffold.
+    //! Notes:
+    //! - These wrappers are currently behind the `alloc` feature to remain
+    //!   compatible with `no_std` builds where `alloc` is unavailable.
+    //! - Introducing these types does not change any public API in dependent
+    //!   crates yet. They are provided here for upcoming incremental adoption.
+    //!
+    //! Intended usage:
+    //! - `SecretBytes`: for password bytes or other sensitive buffers provided by users.
+    //! - `SecretKey`: for derived session keys or key material that must be cleared on drop.
+
+    #[cfg(feature = "alloc")]
+    use alloc::vec::Vec;
+    #[cfg(feature = "alloc")]
+    use core::ops::Deref;
+    #[cfg(feature = "alloc")]
+    use zeroize::{Zeroize, ZeroizeOnDrop};
+
+    /// Zeroizing wrapper for secret byte buffers (e.g., passwords).
+    #[cfg(feature = "alloc")]
+    #[derive(Zeroize, ZeroizeOnDrop)]
+    pub struct SecretBytes(Vec<u8>);
+
+    #[cfg(feature = "alloc")]
+    impl SecretBytes {
+        /// Create a new `SecretBytes` from an owned byte vector.
+        pub fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+
+        /// Borrow the inner bytes without copying.
+        pub fn expose(&self) -> &[u8] {
+            &self.0
+        }
+
+        /// Consume and return the inner `Vec<u8>`.
+        ///
+        /// Note: this transfers ownership of the secret data to the caller.
+        /// Prefer to keep secrets wrapped and scoped when possible.
+        pub fn into_inner(mut self) -> Vec<u8> {
+            let mut out = Vec::new();
+            core::mem::swap(&mut out, &mut self.0);
+            out
+        }
+    }
+
+    #[cfg(feature = "alloc")]
+    impl AsRef<[u8]> for SecretBytes {
+        fn as_ref(&self) -> &[u8] {
+            &self.0
+        }
+    }
+
+    #[cfg(feature = "alloc")]
+    impl Deref for SecretBytes {
+        type Target = [u8];
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+
+    #[cfg(feature = "alloc")]
+    impl From<Vec<u8>> for SecretBytes {
+        fn from(v: Vec<u8>) -> Self {
+            Self(v)
+        }
+    }
+
+    /// Zeroizing wrapper for derived session keys or other key material.
+    #[cfg(feature = "alloc")]
+    #[derive(Zeroize, ZeroizeOnDrop)]
+    pub struct SecretKey(Vec<u8>);
+
+    #[cfg(feature = "alloc")]
+    impl SecretKey {
+        /// Create a new `SecretKey` from an owned byte vector.
+        pub fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+
+        /// Borrow the inner key bytes without copying.
+        pub fn expose(&self) -> &[u8] {
+            &self.0
+        }
+
+        /// Consume and return the inner `Vec<u8>`.
+        ///
+        /// Note: this transfers ownership of the secret key to the caller.
+        pub fn into_inner(mut self) -> Vec<u8> {
+            let mut out = Vec::new();
+            core::mem::swap(&mut out, &mut self.0);
+            out
+        }
+    }
+
+    #[cfg(feature = "alloc")]
+    impl AsRef<[u8]> for SecretKey {
+        fn as_ref(&self) -> &[u8] {
+            &self.0
+        }
+    }
+
+    #[cfg(feature = "alloc")]
+    impl Deref for SecretKey {
+        type Target = [u8];
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+
+    #[cfg(feature = "alloc")]
+    impl From<Vec<u8>> for SecretKey {
+        fn from(v: Vec<u8>) -> Self {
+            Self(v)
+        }
+    }
 }
 
 /// Placeholder module for secret-related traits and policies.

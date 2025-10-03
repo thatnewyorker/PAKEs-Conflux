@@ -130,10 +130,12 @@ where
 }
 
 /// Server in the SSID agreement phase
+#[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct AuCPaceServerSsidEstablish<D, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
 {
+    #[zeroize(skip)]
     secret: ServerSecret,
     nonce: [u8; K1],
     _d: PhantomData<D>,
@@ -165,16 +167,19 @@ where
     #[must_use]
     pub fn agree_ssid(self, client_nonce: [u8; K1]) -> AuCPaceServerAugLayer<D, K1> {
         let ssid = compute_ssid::<D, K1>(self.nonce, client_nonce);
-        AuCPaceServerAugLayer::new(self.secret, ssid)
+        AuCPaceServerAugLayer::new(self.secret.clone(), ssid)
     }
 }
 
 /// Server in the Augmentation layer phase
+#[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct AuCPaceServerAugLayer<D, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
 {
+    #[zeroize(skip)]
     secret: ServerSecret,
+    #[zeroize(skip)]
     ssid: Output<D>,
 }
 
@@ -527,13 +532,16 @@ where
 }
 
 /// Server in the `CPace` substep phase
+#[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct AuCPaceServerCPaceSubstep<D, CSPRNG, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
     CSPRNG: TryRngCore + TryCryptoRng,
 {
+    #[zeroize(skip)]
     ssid: Output<D>,
     prs: [u8; 32],
+    #[zeroize(skip)]
     rng: CSPRNG,
 }
 
@@ -582,10 +590,12 @@ where
 }
 
 /// Server in the `CPace` substep phase
+#[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct AuCPaceServerRecvClientKey<D, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
 {
+    #[zeroize(skip)]
     ssid: Output<D>,
     priv_key: Scalar,
 }
@@ -642,11 +652,14 @@ where
 }
 
 /// Server in the Explicity Mutual Authenticaton phase
+#[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct AuCPaceServerExpMutAuth<D, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
 {
+    #[zeroize(skip)]
     ssid: Output<D>,
+    #[zeroize(skip)]
     sk1: Output<D>,
 }
 

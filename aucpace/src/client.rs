@@ -770,10 +770,12 @@ where
 }
 
 /// Client in the `CPace` substep
+#[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct AuCPaceClientCPaceSubstep<D, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
 {
+    #[zeroize(skip)]
     ssid: Output<D>,
     prs: [u8; 32],
 }
@@ -823,10 +825,12 @@ where
 }
 
 /// Client waiting to receive the server's public key
+#[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct AuCPaceClientRecvServerKey<D, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
 {
+    #[zeroize(skip)]
     ssid: Output<D>,
     priv_key: Scalar,
 }
@@ -890,12 +894,16 @@ where
 }
 
 /// Client in the Explicit Mutual Authenticaton phase
+#[derive(zeroize::Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct AuCPaceClientExpMutAuth<D, const K1: usize>
 where
     D: Digest<OutputSize = U64> + Default,
 {
+    #[zeroize(skip)]
     ssid: Output<D>,
+    #[zeroize(skip)]
     sk1: Output<D>,
+    #[zeroize(skip)]
     server_authenticator: Output<D>,
 }
 
