@@ -2,3 +2,4 @@
 **/*.rs.bk
 .idea/
 .cargo/config.toml
+.DS_Store
