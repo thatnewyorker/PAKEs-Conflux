@@ -1,6 +1,6 @@
 [package]
 name = "secret-utils"
-version = "0.2.0"
+version = "2.1.0"
 description = "Shared utilities for secret handling (wrappers, zeroization, secrecy) used across the PAKEs-Conflux workspace"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/thatnewyorker/PAKEs-Conflux"
