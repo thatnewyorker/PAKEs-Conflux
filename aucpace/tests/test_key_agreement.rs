@@ -104,7 +104,7 @@ fn test_key_agreement() -> Result<()> {
     assert_eq!(server_key.as_ref().len(), 64);
     assert!(client_key.as_ref().iter().any(|&b| b != 0));
     assert!(server_key.as_ref().iter().any(|&b| b != 0));
-    assert_eq!(client_key, server_key);
+    assert!(client_key.ct_eq(&server_key));
 
     Ok(())
 }
@@ -154,7 +154,7 @@ fn test_key_agreement_implicit_auth() -> Result<()> {
     assert_eq!(server_key.as_ref().len(), 64);
     assert!(client_key.as_ref().iter().any(|&b| b != 0));
     assert!(server_key.as_ref().iter().any(|&b| b != 0));
-    assert_eq!(client_key, server_key);
+    assert!(client_key.ct_eq(&server_key));
 
     Ok(())
 }
@@ -203,7 +203,7 @@ fn test_key_agreement_prestablished_ssid() -> Result<()> {
     assert_eq!(server_key.as_ref().len(), 64);
     assert!(client_key.as_ref().iter().any(|&b| b != 0));
     assert!(server_key.as_ref().iter().any(|&b| b != 0));
-    assert_eq!(client_key, server_key);
+    assert!(client_key.ct_eq(&server_key));
 
     Ok(())
 }
@@ -239,7 +239,7 @@ fn test_key_agreement_prestablished_ssid_implicit_auth() -> Result<()> {
     assert_eq!(server_key.as_ref().len(), 64);
     assert!(client_key.as_ref().iter().any(|&b| b != 0));
     assert!(server_key.as_ref().iter().any(|&b| b != 0));
-    assert_eq!(client_key, server_key);
+    assert!(client_key.ct_eq(&server_key));
 
     Ok(())
 }

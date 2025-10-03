@@ -14,7 +14,7 @@ fn test_basic() {
     );
     let key1 = s1.finish(msg2.as_slice()).unwrap();
     let key2 = s2.finish(msg1.as_slice()).unwrap();
-    assert_eq!(key1, key2);
+    assert!(key1.ct_eq(&key2));
 }
 
 #[test]
@@ -31,7 +31,7 @@ fn test_mismatch() {
     );
     let key1 = s1.finish(msg2.as_slice()).unwrap();
     let key2 = s2.finish(msg1.as_slice()).unwrap();
-    assert_ne!(key1, key2);
+    assert!(!key1.ct_eq(&key2));
 }
 
 #[test]
@@ -71,5 +71,5 @@ fn test_basic_symmetric() {
     );
     let key1 = s1.finish(msg2.as_slice()).unwrap();
     let key2 = s2.finish(msg1.as_slice()).unwrap();
-    assert_eq!(key1, key2);
+    assert!(key1.ct_eq(&key2));
 }

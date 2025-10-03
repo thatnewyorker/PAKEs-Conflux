@@ -19,8 +19,7 @@ alloc = []
 std = ["alloc"]
 
 [dependencies]
-# secrecy provides Secret<T> wrappers and controlled exposure of secret data.
-secrecy = { version = "0.10", default-features = false }
+
 # zeroize provides reliable in-memory erasure. Enable derive for convenience.
 zeroize = { version = "1.7", default-features = false, features = ["zeroize_derive"] }
 

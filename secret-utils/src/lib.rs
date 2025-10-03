@@ -90,9 +90,7 @@ pub mod wrappers {
         /// Note: this transfers ownership of the secret data to the caller.
         /// Prefer to keep secrets wrapped and scoped when possible.
         pub fn into_inner(mut self) -> Vec<u8> {
-            let mut out = Vec::new();
-            core::mem::swap(&mut out, &mut self.0);
-            out
+            core::mem::take(&mut self.0)
         }
     }
 
@@ -119,11 +117,19 @@ pub mod wrappers {
         }
     }
 
+    #[cfg(feature = "alloc")]
+    impl core::fmt::Debug for SecretBytes {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            write!(f, "SecretBytes([redacted], len={})", self.0.len())
+        }
+    }
+
     /// Zeroizing wrapper for derived session keys or other key material.
     #[cfg(feature = "alloc")]
-    #[derive(Zeroize, ZeroizeOnDrop, PartialEq)]
+    #[derive(Zeroize, ZeroizeOnDrop)]
     pub struct SecretKey(Vec<u8>);
 
+    #[cfg(feature = "alloc")]
     impl core::fmt::Debug for SecretKey {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             write!(f, "SecretKey([redacted], len={})", self.0.len())
@@ -142,13 +148,35 @@ pub mod wrappers {
             &self.0
         }
 
+        /// Perform a best-effort constant-time equality check against another key.
+        ///
+        /// Note: This avoids early returns and processes both inputs in full,
+        /// but constant-time properties can still be impacted by compiler or platform.
+        /// Prefer minimizing comparisons of secret data in application code.
+        pub fn ct_eq(&self, other: &Self) -> bool {
+            let a = &self.0;
+            let b = &other.0;
+
+            // Fold length difference into accumulator to avoid short-circuiting on length.
+            let max_len = if a.len() > b.len() { a.len() } else { b.len() };
+            let mut acc: u8 = (a.len() ^ b.len()) as u8;
+
+            let mut i = 0;
+            while i < max_len {
+                // Use get().copied().unwrap_or(0) to avoid panics and avoid data-dependent branching.
+                let av = a.get(i).copied().unwrap_or(0);
+                let bv = b.get(i).copied().unwrap_or(0);
+                acc |= av ^ bv;
+                i += 1;
+            }
+            acc == 0
+        }
+
         /// Consume and return the inner `Vec<u8>`.
         ///
         /// Note: this transfers ownership of the secret key to the caller.
         pub fn into_inner(mut self) -> Vec<u8> {
-            let mut out = Vec::new();
-            core::mem::swap(&mut out, &mut self.0);
-            out
+            core::mem::take(&mut self.0)
         }
     }
 
@@ -240,5 +268,53 @@ mod tests {
         assert!(s.contains("len=3"));
         // Ensure raw contents are not present
         assert!(!s.contains("9, 8, 7"));
+    }
+
+    #[test]
+    fn secret_bytes_debug_is_redacted() {
+        let bytes = SecretBytes::new(vec![1u8, 2, 3, 4]);
+        let s = format!("{:?}", bytes);
+        assert!(s.contains("SecretBytes([redacted]"));
+        assert!(s.contains("len=4"));
+        assert!(!s.contains("1, 2, 3, 4"));
+    }
+
+    #[test]
+    fn secret_key_into_inner_round_trip() {
+        let original = vec![1u8, 2, 3, 4, 5];
+        let key = SecretKey::new(original.clone());
+        let out = key.into_inner();
+        assert_eq!(out, vec![1u8, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn secret_bytes_into_inner_round_trip() {
+        let original = vec![10u8, 11, 12, 13];
+        let bytes = SecretBytes::new(original.clone());
+        let out = bytes.into_inner();
+        assert_eq!(out, vec![10u8, 11, 12, 13]);
+    }
+
+    #[test]
+    fn secret_key_as_ref_and_deref() {
+        let key = SecretKey::new(vec![42u8, 43, 44]);
+        assert_eq!(key.as_ref(), &[42u8, 43, 44]);
+        assert_eq!(&*key, &[42u8, 43, 44]);
+    }
+
+    #[test]
+    fn secret_bytes_as_ref_and_deref() {
+        let bytes = SecretBytes::new(vec![7u8, 8, 9]);
+        assert_eq!(bytes.as_ref(), &[7u8, 8, 9]);
+        assert_eq!(&*bytes, &[7u8, 8, 9]);
+    }
+
+    #[test]
+    fn secret_key_ct_eq_true_and_false() {
+        let a1 = SecretKey::new(vec![1u8, 2, 3, 4]);
+        let a2 = SecretKey::new(vec![1u8, 2, 3, 4]);
+        let b = SecretKey::new(vec![1u8, 2, 3, 5]);
+        assert!(a1.ct_eq(&a2));
+        assert!(!a1.ct_eq(&b));
     }
 }

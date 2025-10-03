@@ -485,7 +485,6 @@ dependencies = [
 name = "secret-utils"
 version = "0.1.0"
 dependencies = [
- "secrecy",
  "zeroize",
 ]
 
