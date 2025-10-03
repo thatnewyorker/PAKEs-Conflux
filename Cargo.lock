@@ -22,7 +22,7 @@ dependencies = [
  "rand",
  "rand_core 0.9.3",
  "scrypt",
- "secret-utils",
+ "secret-utils 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde-byte-array",
  "sha2",
@@ -479,6 +479,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "secret-utils"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "448ddce1fd693bd2e85bcf13167b6572be542727c124969f15370d75d1a9622b"
+dependencies = [
+ "zeroize",
+]
+
+[[package]]
 name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -556,7 +565,7 @@ dependencies = [
  "num-bigint",
  "rand",
  "rand_core 0.9.3",
- "secret-utils",
+ "secret-utils 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2",
  "zeroize",
 ]
@@ -583,7 +592,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rand_core 0.9.3",
- "secret-utils",
+ "secret-utils 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha1",
  "sha2",
  "subtle",
