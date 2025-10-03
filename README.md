@@ -6,10 +6,24 @@
 Crates in this repository have not yet received any formal cryptographic and
 security reviews.
 
-No efforts were yet taken in regards of [blinding][3] or erasing secrets from
-the memory.
+Blinding is not yet implemented. Secrets are wrapped and zeroized in memory (via
+`secret-utils`); passwords, ephemeral scalars, and session keys are cleared on drop.
 
 **USE AT YOUR OWN RISK.**
+
+## Secret handling and `SecretKey`
+
+- The workspace uses zeroizing wrappers from the `secret-utils` crate to handle sensitive data.
+- Session keys are returned as `secret_utils::wrappers::SecretKey` in `aucpace`, `spake2`, and `srp`.
+- `SecretKey`:
+  - Zeroizes on drop
+  - Redacts `Debug` output
+  - Is not `Clone` (to reduce accidental copies)
+  - Implements `AsRef<[u8]>` and deref to `&[u8]` for compatibility
+- Usage notes:
+  - Compare two keys with `==` when needed.
+  - To hex-encode, borrow bytes via `key.as_ref()` and pass to your hex/base64 encoder. Avoid logging secrets.
+  - Zeroization is best-effort and does not defend against all attack vectors (e.g., certain hardware/OS-level attacks).
 
 ## Supported algorithms
 

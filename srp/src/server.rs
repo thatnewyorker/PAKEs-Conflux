@@ -82,7 +82,7 @@ pub struct SrpServerVerifier<D: Digest> {
     m1: Output<D>,
     #[zeroize(skip)]
     m2: Output<D>,
-    key: Vec<u8>,
+    key: secret_utils::wrappers::SecretKey,
 }
 
 impl<'a, D: Digest> SrpServer<'a, D> {
@@ -163,7 +163,7 @@ impl<'a, D: Digest> SrpServer<'a, D> {
         Ok(SrpServerVerifier {
             m1,
             m2,
-            key: key.to_bytes_be(),
+            key: secret_utils::wrappers::SecretKey::from(key.to_bytes_be()),
         })
     }
 }
@@ -172,7 +172,7 @@ impl<D: Digest> SrpServerVerifier<D> {
     /// Get shared secret between user and the server. (do not forget to verify
     /// that keys are the same!)
     pub fn key(&self) -> &[u8] {
-        &self.key
+        self.key.as_ref()
     }
 
     /// Verification data for sending to the client.

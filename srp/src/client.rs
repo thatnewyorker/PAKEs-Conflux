@@ -106,7 +106,7 @@ pub struct SrpClientVerifier<D: Digest> {
     m1: Output<D>,
     #[zeroize(skip)]
     m2: Output<D>,
-    key: Vec<u8>,
+    key: secret_utils::wrappers::SecretKey,
 }
 
 impl<'a, D: Digest> SrpClient<'a, D> {
@@ -225,7 +225,7 @@ impl<'a, D: Digest> SrpClient<'a, D> {
         Ok(SrpClientVerifier {
             m1,
             m2,
-            key: key.to_bytes_be(),
+            key: secret_utils::wrappers::SecretKey::from(key.to_bytes_be()),
         })
     }
 }
@@ -235,7 +235,7 @@ impl<D: Digest> SrpClientVerifier<D> {
     /// authenticated encryption modes. DO NOT USE this method without
     /// some kind of secure authentication
     pub fn key(&self) -> &[u8] {
-        &self.key
+        self.key.as_ref()
     }
 
     /// Verification data for sending to the server.
@@ -250,5 +250,13 @@ impl<D: Digest> SrpClientVerifier<D> {
         } else {
             Err(SrpAuthError::BadRecordMac("server".to_owned()))
         }
+    }
+
+    /// Return the shared secret as a zeroizing wrapper.
+    ///
+    /// This preserves existing usage via `key()` which returns `&[u8]`, while
+    /// allowing callers to obtain a zeroizing key and use `as_ref()` to access bytes.
+    pub fn key_secret(&self) -> &secret_utils::wrappers::SecretKey {
+        &self.key
     }
 }

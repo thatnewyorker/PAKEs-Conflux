@@ -43,6 +43,61 @@ the blinding process. Only one such Group is implemented, named
 `Ed25519Group`, which provides fast operations and high security, and is
 compatible with my [python implementation](https://github.com/warner/python-spake2).
 
+## SecretKey usage (session key handling)
+
+SPAKE2 returns the derived session key as `secret_utils::wrappers::SecretKey`. This wrapper:
+- Zeroizes its contents on drop (`ZeroizeOnDrop`)
+- Redacts `Debug` output to avoid accidental leaks
+- Is not `Clone`, reducing accidental copies
+- Allows borrowing bytes via `as_ref()` or deref to `&[u8]`
+
+Examples:
+
+- Compare two session keys (equality)
+
+```/dev/null/usage.rs#L1-11
+use secret_utils::wrappers::SecretKey;
+
+fn equal_keys(k1: &SecretKey, k2: &SecretKey) -> bool {
+    // Standard equality; do not rely on constant-time properties here.
+    k1 == k2
+}
+```
+
+- Hex encode a session key (only when necessary)
+
+```/dev/null/usage.rs#L12-29
+use secret_utils::wrappers::SecretKey;
+
+// Requires the `hex` crate when you actually use this pattern.
+fn key_as_hex(key: &SecretKey) -> String {
+    // Borrow without copying the underlying bytes
+    let bytes: &[u8] = key.as_ref();
+    hex::encode(bytes)
+}
+
+// Even though Debug is redacted, avoid logging secrets altogether.
+```
+
+- Drop semantics (automatic zeroization when leaving scope)
+
+```/dev/null/usage.rs#L30-44
+use secret_utils::wrappers::SecretKey;
+
+fn ephemeral_use() {
+    {
+        // SPAKE2 APIs return `SecretKey` directly; constructed here for demo.
+        let key = SecretKey::from(vec![0u8; 32]);
+        // use `key.as_ref()` to access bytes
+        let _first_byte = key.as_ref().get(0).copied();
+    } // key is zeroized here on drop
+}
+```
+
+Notes:
+- Prefer borrowing (`&[u8]`) instead of taking ownership.
+- Do not print or log keys; use authenticated encryption if you must serialize.
+
 # What Is It Good For?
 
 PAKE can be used in a pairing protocol, like the initial version of Firefox

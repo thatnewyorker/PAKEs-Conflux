@@ -35,6 +35,63 @@ these messages.
 
 Currently this implementation uses the "Ristretto255" group, though this is subject to change.
 
+## SecretKey usage (session key handling)
+
+AuCPace returns the derived session key as `secret_utils::wrappers::SecretKey`. This wrapper:
+- Zeroizes its contents on drop (`ZeroizeOnDrop`)
+- Avoids accidental exposure (redacted `Debug`)
+- Is not `Clone` to reduce accidental copies
+- Allows borrowing bytes via `as_ref()` or deref to `&[u8]`
+
+Examples:
+
+- Compare two session keys (equality)
+
+```/dev/null/usage.rs#L1-11
+use secret_utils::wrappers::SecretKey;
+
+fn equal_keys(k1: &SecretKey, k2: &SecretKey) -> bool {
+    // Standard equality; do not rely on constant-time properties here.
+    k1 == k2
+}
+```
+
+- Hex encode a session key (only when absolutely necessary)
+
+```/dev/null/usage.rs#L12-29
+use secret_utils::wrappers::SecretKey;
+
+// Requires the `hex` crate when you actually use this pattern.
+fn key_as_hex(key: &SecretKey) -> String {
+    // Borrow without copying the underlying bytes
+    let bytes: &[u8] = key.as_ref();
+    hex::encode(bytes)
+}
+
+// Alternatively, for logging-sensitive contexts, prefer not to print secrets.
+// Debug is redacted, but it's still best to avoid logging secrets altogether.
+```
+
+- Drop semantics (automatic zeroization when leaving scope)
+
+```/dev/null/usage.rs#L30-44
+use secret_utils::wrappers::SecretKey;
+
+fn ephemeral_use() {
+    {
+        // Constructed for demonstration; AuCPace APIs return `SecretKey` directly.
+        let key = SecretKey::from(vec![0u8; 32]);
+        // use `key.as_ref()` to access bytes
+        let _first_byte = key.as_ref().get(0).copied();
+    } // key is zeroized here on drop
+}
+```
+
+Notes:
+- Prefer borrowing (`&[u8]`) over taking ownership.
+- Avoid persisting secrets in logs or long-lived buffers.
+- If you must serialize for transport/storage, consider authenticated encryption; hex/base64 only encodes bytes and does not provide secrecy.
+
 # What Is It Good For?
 AuCPace is designed for Industrial IOT settings, specifically where you have many low-power servers and a single
 client which is assumed to be more powerful. This protocol is specifically designed for situations with limited
