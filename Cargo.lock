@@ -22,11 +22,7 @@ dependencies = [
  "rand",
  "rand_core 0.9.3",
  "scrypt",
-<<<<<<< HEAD
- "secret-utils 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-=======
  "secret-utils 0.2.0",
->>>>>>> testing
  "serde",
  "serde-byte-array",
  "sha2",
@@ -492,15 +488,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "secret-utils"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "448ddce1fd693bd2e85bcf13167b6572be542727c124969f15370d75d1a9622b"
-dependencies = [
- "zeroize",
-]
-
-[[package]]
 name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -578,11 +565,7 @@ dependencies = [
  "num-bigint",
  "rand",
  "rand_core 0.9.3",
-<<<<<<< HEAD
- "secret-utils 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-=======
  "secret-utils 0.2.0",
->>>>>>> testing
  "sha2",
  "zeroize",
 ]
@@ -609,11 +592,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rand_core 0.9.3",
-<<<<<<< HEAD
- "secret-utils 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-=======
  "secret-utils 0.2.0",
->>>>>>> testing
  "sha1",
  "sha2",
  "subtle",
@@ -665,9 +644,9 @@ dependencies = [
 
 [[package]]
 name = "typenum"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dccffe3ce07af9386bfd29e80c0ab1a8205a2fc34e4bcd40364df902cfa8f3f"
+checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 
 [[package]]
 name = "unicode-ident"
