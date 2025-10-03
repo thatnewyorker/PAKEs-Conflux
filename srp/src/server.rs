@@ -64,6 +64,7 @@ use std::marker::PhantomData;
 use digest::{Digest, Output};
 use num_bigint::BigUint;
 use subtle::ConstantTimeEq;
+use zeroize::Zeroize;
 
 use crate::types::{SrpAuthError, SrpGroup};
 use crate::utils::{compute_k, compute_m1, compute_m2, compute_u};
@@ -75,8 +76,11 @@ pub struct SrpServer<'a, D: Digest> {
 }
 
 /// SRP server state after handshake with the client.
+#[derive(Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct SrpServerVerifier<D: Digest> {
+    #[zeroize(skip)]
     m1: Output<D>,
+    #[zeroize(skip)]
     m2: Output<D>,
     key: Vec<u8>,
 }

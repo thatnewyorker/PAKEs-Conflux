@@ -234,6 +234,8 @@ mod ed25519;
 mod error;
 mod group;
 
+use zeroize::Zeroize;
+
 pub use self::{
     ed25519::Ed25519Group,
     error::{Error, Result},
@@ -250,7 +252,7 @@ use rand::rngs::OsRng;
 
 /// Password type.
 // TODO(tarcieri): avoid allocation?
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Zeroize, zeroize::ZeroizeOnDrop)]
 pub struct Password(Vec<u8>);
 
 impl Password {
@@ -260,11 +262,17 @@ impl Password {
     }
 }
 
-impl Deref for Password {
-    type Target = Vec<u8>;
+impl AsRef<[u8]> for Password {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
 
-    fn deref(&self) -> &Vec<u8> {
-        &self.0
+impl Deref for Password {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_slice()
     }
 }
 
@@ -303,7 +311,7 @@ pub struct Spake2<G: Group> {
     //where &G::Scalar: Neg {
     side: Side,
     xy_scalar: G::Scalar,
-    password_vec: Vec<u8>,
+    password_vec: Password,
     msg1: Vec<u8>,
     password_scalar: G::Scalar,
 }
@@ -423,7 +431,7 @@ impl<G: Group> Spake2<G> {
 
         Ok(match self.side {
             Side::A { id_a, id_b } => ed25519::hash_ab(
-                &self.password_vec,
+                self.password_vec.as_ref(),
                 &id_a,
                 &id_b,
                 self.msg1.as_slice(),
@@ -431,7 +439,7 @@ impl<G: Group> Spake2<G> {
                 &key_bytes,
             ),
             Side::B { id_a, id_b } => ed25519::hash_ab(
-                &self.password_vec,
+                self.password_vec.as_ref(),
                 &id_a,
                 &id_b,
                 &msg2[1..],
@@ -439,7 +447,7 @@ impl<G: Group> Spake2<G> {
                 &key_bytes,
             ),
             Side::Symmetric { id_s } => ed25519::hash_symmetric(
-                &self.password_vec,
+                self.password_vec.as_ref(),
                 &id_s,
                 &self.msg1,
                 &msg2[1..],
@@ -466,8 +474,7 @@ impl<G: Group> Spake2<G> {
         );
         //let m1: G::Element = &G::basepoint_mult(&x) + &(blinding * &password_scalar);
         let msg1: Vec<u8> = G::element_to_bytes(&m1);
-        let mut password_vec = Vec::new();
-        password_vec.extend_from_slice(password);
+        let password_vec = password.clone();
 
         let mut msg_and_side = vec![match side {
             Side::A { id_a: _, id_b: _ } => 0x41, // 'A'

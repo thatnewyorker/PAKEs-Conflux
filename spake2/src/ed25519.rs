@@ -137,7 +137,7 @@ fn ed25519_hash_to_scalar(s: &[u8]) -> c2_Scalar {
 
 /// Hash `idA` and `idB` identities.
 pub fn hash_ab(
-    password_vec: &[u8],
+    password_bytes: &[u8],
     id_a: &[u8],
     id_b: &[u8],
     first_msg: &[u8],
@@ -156,7 +156,7 @@ pub fn hash_ab(
     let mut transcript = [0u8; 6 * 32];
 
     let mut pw_hash = Sha256::new();
-    pw_hash.update(password_vec);
+    pw_hash.update(password_bytes);
     transcript[0..32].copy_from_slice(&pw_hash.finalize());
 
     let mut ida_hash = Sha256::new();
@@ -181,7 +181,7 @@ pub fn hash_ab(
 
 /// Hash symmetric identities.
 pub fn hash_symmetric(
-    password_vec: &[u8],
+    password_bytes: &[u8],
     id_s: &[u8],
     msg_u: &[u8],
     msg_v: &[u8],
@@ -204,7 +204,7 @@ pub fn hash_symmetric(
     let mut transcript = [0u8; 5 * 32];
 
     let mut pw_hash = Sha256::new();
-    pw_hash.update(password_vec);
+    pw_hash.update(password_bytes);
     transcript[0..32].copy_from_slice(&pw_hash.finalize());
 
     let mut ids_hash = Sha256::new();

@@ -1,0 +1,29 @@
+[package]
+name = "secret-utils"
+version = "0.1.0"
+description = "Shared utilities for secret handling (wrappers, zeroization, secrecy) used across the PAKEs-Conflux workspace"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/thatnewyorker/PAKEs-Conflux"
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "secret_utils"
+path = "src/lib.rs"
+
+[features]
+# Default to alloc-enabled, no_std-friendly configuration.
+default = []
+alloc = []
+# Convenience feature to opt into std if desired by dependents.
+std = ["alloc"]
+
+[dependencies]
+# secrecy provides Secret<T> wrappers and controlled exposure of secret data.
+secrecy = { version = "0.10", default-features = false }
+# zeroize provides reliable in-memory erasure. Enable derive for convenience.
+zeroize = { version = "1.7", default-features = false, features = ["zeroize_derive"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

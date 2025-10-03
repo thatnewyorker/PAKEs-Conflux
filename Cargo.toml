@@ -5,6 +5,7 @@ members = [
     "aucpace",
     "spake2",
     "srp",
+    "secret-utils",
 ]
 
 [profile.dev]
