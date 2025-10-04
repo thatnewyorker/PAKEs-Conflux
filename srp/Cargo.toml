@@ -1,6 +1,6 @@
 [package]
 name = "srp-conflux"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["Gerard Cruzado <thatnewyorker@gmail.com>", "RustCrypto Developers"]
 license = "MIT OR Apache-2.0"
 description = "Secure Remote Password (SRP) protocol implementation"
@@ -10,7 +10,7 @@ keywords = ["crypto", "pake", "authentication"]
 categories = ["cryptography", "authentication"]
 readme = "README.md"
 edition = "2024"
-rust-version = "1.90"
+rust-version = "1.89"
 
 [lib]
 name = "srp_conflux"

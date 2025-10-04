@@ -1,6 +1,6 @@
 [package]
 name = "aucpace-conflux"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Gerard Cruzado <thatnewyorker@gmail.com>", "Sam Leonard <tritoke@protonmail.com>"]
 description = "AuCPace protocol implementation"
 documentation = "https://docs.rs/aucpace-conflux"
@@ -12,7 +12,7 @@ categories = ["cryptography", "authentication"]
 exclude = [".gitignore"]
 readme = "README.md"
 edition = "2024"
-rust-version = "1.90"
+rust-version = "1.89"
 
 [lib]
 name = "aucpace_conflux"

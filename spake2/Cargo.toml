@@ -1,6 +1,6 @@
 [package]
 name = "spake2-conflux"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Gerard Cruzado <thatnewyorker@gmail.com>", "Brian Warner <warner@lothar.com>"]
 description = "The SPAKE2 password-authenticated key-exchange algorithm."
 documentation = "https://docs.rs/spake2-conflux"
@@ -12,7 +12,7 @@ categories = ["cryptography", "authentication"]
 exclude = [".gitignore"]
 readme = "README.md"
 edition = "2024"
-rust-version = "1.90"
+rust-version = "1.89"
 
 [lib]
 name = "spake2_conflux"
