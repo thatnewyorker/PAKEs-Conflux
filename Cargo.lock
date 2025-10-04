@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "aucpace-conflux"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bincode",
  "curve25519-dalek",
@@ -22,7 +22,7 @@ dependencies = [
  "rand",
  "rand_core 0.9.3",
  "scrypt",
- "secret-utils 0.2.0",
+ "secret-utils 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde-byte-array",
  "sha2",
@@ -296,11 +296,10 @@ checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
 
 [[package]]
 name = "lock_api"
-version = "0.4.13"
+version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96936507f153605bddfcda068dd804796c84324ed2510809e5b2a624c81da765"
+checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
 dependencies = [
- "autocfg",
  "scopeguard",
 ]
 
@@ -473,16 +472,16 @@ dependencies = [
 
 [[package]]
 name = "secret-utils"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "448ddce1fd693bd2e85bcf13167b6572be542727c124969f15370d75d1a9622b"
+version = "0.2.2"
 dependencies = [
  "zeroize",
 ]
 
 [[package]]
 name = "secret-utils"
-version = "0.2.1"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e85c88b9ea19c359226abc9ed4bcc9b0ac6ce8498fd7e1cc388b44a8c38b4c19"
 dependencies = [
  "zeroize",
 ]
@@ -556,7 +555,7 @@ dependencies = [
 
 [[package]]
 name = "spake2-conflux"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "bencher",
  "curve25519-dalek",
@@ -565,7 +564,7 @@ dependencies = [
  "num-bigint",
  "rand",
  "rand_core 0.9.3",
- "secret-utils 0.2.0",
+ "secret-utils 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2",
  "zeroize",
 ]
@@ -581,7 +580,7 @@ dependencies = [
 
 [[package]]
 name = "srp-conflux"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "digest",
  "generic-array 1.2.0",
@@ -592,7 +591,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rand_core 0.9.3",
- "secret-utils 0.2.0",
+ "secret-utils 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha1",
  "sha2",
  "subtle",
