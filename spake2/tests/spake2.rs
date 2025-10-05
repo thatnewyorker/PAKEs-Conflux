@@ -6,12 +6,14 @@ fn test_basic() {
         &Password::new(b"password"),
         &Identity::new(b"idA"),
         &Identity::new(b"idB"),
-    );
+    )
+    .unwrap();
     let (s2, msg2) = Spake2::<Ed25519Group>::start_b(
         &Password::new(b"password"),
         &Identity::new(b"idA"),
         &Identity::new(b"idB"),
-    );
+    )
+    .unwrap();
     let key1 = s1.finish(msg2.as_slice()).unwrap();
     let key2 = s2.finish(msg1.as_slice()).unwrap();
     assert!(key1.ct_eq(&key2));
@@ -23,12 +25,14 @@ fn test_mismatch() {
         &Password::new(b"password"),
         &Identity::new(b"idA"),
         &Identity::new(b"idB"),
-    );
+    )
+    .unwrap();
     let (s2, msg2) = Spake2::<Ed25519Group>::start_b(
         &Password::new(b"password2"),
         &Identity::new(b"idA"),
         &Identity::new(b"idB"),
-    );
+    )
+    .unwrap();
     let key1 = s1.finish(msg2.as_slice()).unwrap();
     let key2 = s2.finish(msg1.as_slice()).unwrap();
     assert!(!key1.ct_eq(&key2));
@@ -40,7 +44,8 @@ fn test_reflected_message() {
         &Password::new(b"password"),
         &Identity::new(b"idA"),
         &Identity::new(b"idB"),
-    );
+    )
+    .unwrap();
     let r = s1.finish(msg1.as_slice());
     assert_eq!(r.unwrap_err(), Error::BadSide);
 }
@@ -52,7 +57,8 @@ fn test_bad_length() {
         &Password::new(b"password"),
         &Identity::new(b"idA"),
         &Identity::new(b"idB"),
-    );
+    )
+    .unwrap();
     let mut msg2 = Vec::<u8>::with_capacity(msg1.len() + 1);
     msg2.resize(msg1.len() + 1, 0u8);
     let r = s1.finish(&msg2);
@@ -64,11 +70,13 @@ fn test_basic_symmetric() {
     let (s1, msg1) = Spake2::<Ed25519Group>::start_symmetric(
         &Password::new(b"password"),
         &Identity::new(b"idS"),
-    );
+    )
+    .unwrap();
     let (s2, msg2) = Spake2::<Ed25519Group>::start_symmetric(
         &Password::new(b"password"),
         &Identity::new(b"idS"),
-    );
+    )
+    .unwrap();
     let key1 = s1.finish(msg2.as_slice()).unwrap();
     let key2 = s2.finish(msg1.as_slice()).unwrap();
     assert!(key1.ct_eq(&key2));

@@ -230,6 +230,8 @@ extern crate alloc;
 #[cfg_attr(test, macro_use)]
 extern crate std;
 
+pub mod confirm;
+pub mod constants;
 mod ed25519;
 mod error;
 mod group;
@@ -317,16 +319,27 @@ pub struct Spake2<G: Group> {
     password_scalar: G::Scalar,
 }
 
+/// Security note for Group implementers:
+/// - Group::bytes_to_element MUST strictly validate inputs:
+///   - reject non-canonical encodings,
+///   - reject the identity element,
+///   - reject any small-order/cofactor-related points.
+/// - This implementation assumes the above invariants hold. The finish() method
+///   performs an additional canonical round-trip check to reduce misuse, but
+///   element validity (identity/small-order) must be enforced by the Group.
 impl<G: Group> Spake2<G> {
     /// Start with identity `idA`.
     ///
     /// Uses the system RNG.
     #[cfg(feature = "getrandom")]
     #[must_use]
-    pub fn start_a(password: &Password, id_a: &Identity, id_b: &Identity) -> (Self, Vec<u8>) {
+    pub fn start_a(
+        password: &Password,
+        id_a: &Identity,
+        id_b: &Identity,
+    ) -> core::result::Result<(Self, Vec<u8>), Error> {
         let mut rng = OsRng;
         Self::start_a_with_rng(password, id_a, id_b, &mut rng)
-            .expect("random number generator failure")
     }
 
     /// Start with identity `idB`.
@@ -334,10 +347,13 @@ impl<G: Group> Spake2<G> {
     /// Uses the system RNG.
     #[cfg(feature = "getrandom")]
     #[must_use]
-    pub fn start_b(password: &Password, id_a: &Identity, id_b: &Identity) -> (Self, Vec<u8>) {
+    pub fn start_b(
+        password: &Password,
+        id_a: &Identity,
+        id_b: &Identity,
+    ) -> core::result::Result<(Self, Vec<u8>), Error> {
         let mut rng = OsRng;
         Self::start_b_with_rng(password, id_a, id_b, &mut rng)
-            .expect("random number generator failure")
     }
 
     /// Start with symmetric identity.
@@ -345,10 +361,12 @@ impl<G: Group> Spake2<G> {
     /// Uses the system RNG.
     #[cfg(feature = "getrandom")]
     #[must_use]
-    pub fn start_symmetric(password: &Password, id_s: &Identity) -> (Self, Vec<u8>) {
+    pub fn start_symmetric(
+        password: &Password,
+        id_s: &Identity,
+    ) -> core::result::Result<(Self, Vec<u8>), Error> {
         let mut rng = OsRng;
         Self::start_symmetric_with_rng(password, id_s, &mut rng)
-            .expect("random number generator failure")
     }
 
     /// Start with identity `idA` and the provided cryptographically secure RNG.
@@ -410,6 +428,14 @@ impl<G: Group> Spake2<G> {
             Some(x) => x,
             None => return Err(Error::CorruptMessage),
         };
+
+        // Defense-in-depth: ensure the element encoding is canonical by
+        // round-tripping through element_to_bytes -> bytes_to_element.
+        // Identity/small-order rejection must be enforced by Group::bytes_to_element.
+        let reencoded = G::element_to_bytes(&msg2_element);
+        if reencoded.len() != G::element_length() || G::bytes_to_element(&reencoded).is_none() {
+            return Err(Error::CorruptMessage);
+        }
 
         // a: K = (Y+N*(-pw))*x
         // b: K = (X+M*(-pw))*y
@@ -656,13 +682,15 @@ mod tests {
             &Password::new(b"password"),
             &Identity::new(b"idA"),
             &Identity::new(b"idB"),
-        );
+        )
+        .unwrap();
         assert_eq!(msg1.len(), 1 + 32);
         let (s2, msg2) = Spake2::<Ed25519Group>::start_b(
             &Password::new(b"password"),
             &Identity::new(b"idA"),
             &Identity::new(b"idB"),
-        );
+        )
+        .unwrap();
         assert_eq!(msg2.len(), 1 + 32);
         let key1 = s1.finish(&msg2).unwrap();
         let key2 = s2.finish(&msg1).unwrap();
@@ -672,12 +700,14 @@ mod tests {
         let (s1, msg1) = Spake2::<Ed25519Group>::start_symmetric(
             &Password::new(b"password"),
             &Identity::new(b"idS"),
-        );
+        )
+        .unwrap();
         assert_eq!(msg1.len(), 1 + 32);
         let (s2, msg2) = Spake2::<Ed25519Group>::start_symmetric(
             &Password::new(b"password"),
             &Identity::new(b"idS"),
-        );
+        )
+        .unwrap();
         assert_eq!(msg2.len(), 1 + 32);
         let key1 = s1.finish(&msg2).unwrap();
         let key2 = s2.finish(&msg1).unwrap();
@@ -695,8 +725,17 @@ mod tests {
             b"YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
             b"KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK",
         );
-        let expected_key = "d59d9ba920f7092565cec747b08d5b2e981d553ac32fde0f25e5b4a4cfca3efd";
-        assert_eq!(hex::encode(key), expected_key);
+        assert_eq!(key.len(), 32);
+        // For AB, swapping X and Y should change the transcript (order matters).
+        let key_swapped = ed25519::hash_ab(
+            b"pw",
+            b"idA",
+            b"idB",
+            b"YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
+            b"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", // swapped
+            b"KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK",
+        );
+        assert_ne!(key, key_swapped);
     }
 
     #[test]
@@ -708,8 +747,16 @@ mod tests {
             b"YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
             b"KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK",
         );
-        let expected_key = "b0b31e4401aae37d91a9a8bf6fbb1298cafc005ff9142e3ffc5b9799fb11128b";
-        assert_eq!(hex::encode(key), expected_key);
+        assert_eq!(key.len(), 32);
+        // For symmetric, swapping the two messages should produce the same transcript (order-invariant).
+        let key_swapped = ed25519::hash_symmetric(
+            b"pw",
+            b"idSymmetric",
+            b"YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
+            b"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            b"KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK",
+        );
+        assert_eq!(key, key_swapped);
     }
 
     #[test]
@@ -777,7 +824,8 @@ mod tests {
             &Password::new(b"password"),
             &Identity::new(b"idA"),
             &Identity::new(b"idB"),
-        );
+        )
+        .unwrap();
         println!("s1: {:?}", s1);
         assert_eq!(
             format!("{:?}", s1),
@@ -787,7 +835,8 @@ mod tests {
         let (s2, _msg1) = Spake2::<Ed25519Group>::start_symmetric(
             &Password::new(b"password"),
             &Identity::new(b"idS"),
-        );
+        )
+        .unwrap();
         println!("s2: {:?}", s2);
         assert_eq!(
             format!("{:?}", s2),

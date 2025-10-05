@@ -17,11 +17,15 @@ default = ["alloc"]
 alloc = []
 # Convenience feature to opt into std if desired by dependents.
 std = ["alloc"]
+# Opt-in constant-time comparisons using the subtle crate.
+constant-time = ["dep:subtle"]
 
 [dependencies]
 
 # zeroize provides reliable in-memory erasure. Enable derive for convenience.
 zeroize = { version = "1.7", default-features = false, features = ["zeroize_derive"] }
+# subtle provides constant-time equality primitives (optional).
+subtle = { version = "2.6.1", default-features = false, optional = true }
 
 [package.metadata.docs.rs]
 all-features = true

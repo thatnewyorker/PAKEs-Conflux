@@ -65,6 +65,8 @@ pub mod wrappers {
     use alloc::vec::Vec;
     #[cfg(feature = "alloc")]
     use core::ops::Deref;
+    #[cfg(feature = "constant-time")]
+    use subtle::ConstantTimeEq;
     #[cfg(feature = "alloc")]
     use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -83,6 +85,42 @@ pub mod wrappers {
         /// Borrow the inner bytes without copying.
         pub fn expose(&self) -> &[u8] {
             &self.0
+        }
+
+        /// Perform a best-effort constant-time equality check against another buffer.
+        ///
+        /// Note: This avoids early returns and processes both inputs in full,
+        /// but constant-time properties can still be impacted by compiler or platform.
+        /// For fixed-size secrets (e.g., 32 bytes) and when the `constant-time` feature
+        /// is enabled, this uses `subtle::ConstantTimeEq` for comparison.
+        pub fn ct_eq(&self, other: &Self) -> bool {
+            let a = &self.0;
+            let b = &other.0;
+
+            // Use subtle for 32-byte fast path when enabled.
+            #[cfg(feature = "constant-time")]
+            {
+                if a.len() == 32 && b.len() == 32 {
+                    let mut ea = [0u8; 32];
+                    let mut eb = [0u8; 32];
+                    ea.copy_from_slice(&a[..32]);
+                    eb.copy_from_slice(&b[..32]);
+                    return ea.ct_eq(&eb).unwrap_u8() == 1;
+                }
+            }
+
+            // Generic fallback for arbitrary-length: process full length.
+            let max_len = if a.len() > b.len() { a.len() } else { b.len() };
+            let mut acc: u8 = (a.len() ^ b.len()) as u8;
+
+            let mut i = 0;
+            while i < max_len {
+                let av = a.get(i).copied().unwrap_or(0);
+                let bv = b.get(i).copied().unwrap_or(0);
+                acc |= av ^ bv;
+                i += 1;
+            }
+            acc == 0
         }
 
         /// Consume and return the inner `Vec<u8>`.
@@ -203,6 +241,39 @@ pub mod wrappers {
         fn from(v: Vec<u8>) -> Self {
             Self(v)
         }
+    }
+
+    /// Constant-time equality for arbitrary byte slices.
+    ///
+    /// Behavior:
+    /// - Processes both inputs fully and folds length differences into the accumulator.
+    /// - When the `constant-time` feature is enabled and both inputs are 32 bytes,
+    ///   uses a `subtle::ConstantTimeEq` fast path; otherwise falls back to a
+    ///   generic constant-time loop.
+    #[cfg(feature = "alloc")]
+    pub fn ct_eq_slice(a: &[u8], b: &[u8]) -> bool {
+        #[cfg(feature = "constant-time")]
+        {
+            if a.len() == 32 && b.len() == 32 {
+                let mut ea = [0u8; 32];
+                let mut eb = [0u8; 32];
+                ea.copy_from_slice(&a[..32]);
+                eb.copy_from_slice(&b[..32]);
+                return ea.ct_eq(&eb).unwrap_u8() == 1;
+            }
+        }
+
+        let max_len = if a.len() > b.len() { a.len() } else { b.len() };
+        let mut acc: u8 = (a.len() ^ b.len()) as u8;
+
+        let mut i = 0;
+        while i < max_len {
+            let av = a.get(i).copied().unwrap_or(0);
+            let bv = b.get(i).copied().unwrap_or(0);
+            acc |= av ^ bv;
+            i += 1;
+        }
+        acc == 0
     }
 }
 

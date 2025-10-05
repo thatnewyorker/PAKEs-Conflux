@@ -8,7 +8,8 @@ fn spake2_start(bench: &mut Bencher) {
             &Password::new(b"password"),
             &Identity::new(b"idA"),
             &Identity::new(b"idB"),
-        );
+        )
+        .unwrap();
     })
 }
 
@@ -35,14 +36,16 @@ fn spake2_start_and_finish(bench: &mut Bencher) {
         &Password::new(b"password"),
         &Identity::new(b"idA"),
         &Identity::new(b"idB"),
-    );
+    )
+    .unwrap();
     let msg2_slice = msg2.as_slice();
     bench.iter(|| {
         let (s1, _) = Spake2::<Ed25519Group>::start_a(
             &Password::new(b"password"),
             &Identity::new(b"idA"),
             &Identity::new(b"idB"),
-        );
+        )
+        .unwrap();
         s1.finish(msg2_slice)
     })
 }

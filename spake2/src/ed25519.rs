@@ -2,7 +2,9 @@
 
 use crate::{Group, c2_Element, c2_Scalar};
 use alloc::vec::Vec;
-use curve25519_dalek::{constants::ED25519_BASEPOINT_POINT, edwards::CompressedEdwardsY};
+use curve25519_dalek::{
+    constants::ED25519_BASEPOINT_POINT, edwards::CompressedEdwardsY, traits::IsIdentity,
+};
 use hkdf::Hkdf;
 use rand_core::{TryCryptoRng, TryRngCore};
 use sha2::{Digest, Sha256, Sha512};
@@ -22,6 +24,11 @@ impl Group for Ed25519Group {
         "Ed25519"
     }
 
+    // M constant (distinguished element)
+    // Provenance: This constant must be derived deterministically with a documented hash-to-group
+    // procedure to ensure its discrete log is unknown. See tools/derive_constants.rs for the
+    // reproducible process and rationale. The bytes below are historically sourced and retained
+    // for compatibility; future major versions may regenerate via the documented procedure.
     fn const_m() -> c2_Element {
         // python -c "import binascii, spake2; b=binascii.hexlify(spake2.ParamsEd25519.M.to_bytes()); print(', '.join(['0x'+b[i:i+2] for i in range(0,len(b),2)]))"
         // 15cfd18e385952982b6a8f8c7854963b58e34388c8e6dae891db756481a02312
@@ -34,6 +41,11 @@ impl Group for Ed25519Group {
         .unwrap()
     }
 
+    // N constant (distinguished element)
+    // Provenance: This constant must be derived deterministically with a documented hash-to-group
+    // procedure to ensure its discrete log is unknown. See tools/derive_constants.rs for the
+    // reproducible process and rationale. The bytes below are historically sourced and retained
+    // for compatibility; future major versions may regenerate via the documented procedure.
     fn const_n() -> c2_Element {
         // python -c "import binascii, spake2; b=binascii.hexlify(spake2.ParamsEd25519.N.to_bytes()); print(', '.join(['0x'+b[i:i+2] for i in range(0,len(b),2)]))"
         // f04f2e7eb734b2a8f8b472eaf9c3c632576ac64aea650b496a8a20ff00e583c3
@@ -46,6 +58,11 @@ impl Group for Ed25519Group {
         .unwrap()
     }
 
+    // S constant (symmetric distinguished element)
+    // Provenance: This constant must be derived deterministically with a documented hash-to-group
+    // procedure to ensure its discrete log is unknown. See tools/derive_constants.rs for the
+    // reproducible process and rationale. The bytes below are historically sourced and retained
+    // for compatibility; future major versions may regenerate via the documented procedure.
     fn const_s() -> c2_Element {
         // python -c "import binascii, spake2; b=binascii.hexlify(spake2.ParamsEd25519.S.to_bytes()); print(', '.join(['0x'+b[i:i+2] for i in range(0,len(b),2)]))"
         // 6f00dae87c1be1a73b5922ef431cd8f57879569c222d22b1cd71e8546ab8e6f1
@@ -95,7 +112,18 @@ impl Group for Ed25519Group {
         bytes.copy_from_slice(b);
 
         let cey = CompressedEdwardsY(bytes);
-        cey.decompress()
+        match cey.decompress() {
+            Some(p) => {
+                // Reject identity and small-order points (cofactor-related points)
+                // to prevent degenerate shared secrets.
+                if bool::from(p.is_identity()) || bool::from(p.mul_by_cofactor().is_identity()) {
+                    None
+                } else {
+                    Some(p)
+                }
+            }
+            None => None,
+        }
     }
 
     fn basepoint_mult(s: &c2_Scalar) -> c2_Element {
@@ -171,11 +199,38 @@ pub fn hash_ab(
     transcript[128..160].copy_from_slice(second_msg);
     transcript[160..192].copy_from_slice(key_bytes);
 
-    //println!("transcript: {:?}", transcript.iter().to_hex());
-
-    //let mut hash = G::TranscriptHash::default();
+    // Build labeled, length-prefixed transcript for AB flow.
     let mut hash = Sha256::new();
-    hash.update(transcript);
+    hash.update(b"spake2-conflux/transcript/ab/v1");
+
+    // Compute component digests.
+    let mut pw_hasher = Sha256::new();
+    pw_hasher.update(password_bytes);
+    let pw_digest = pw_hasher.finalize();
+
+    let mut ida_hasher = Sha256::new();
+    ida_hasher.update(id_a);
+    let ida_digest = ida_hasher.finalize();
+
+    let mut idb_hasher = Sha256::new();
+    idb_hasher.update(id_b);
+    let idb_digest = idb_hasher.finalize();
+
+    // Helper to absorb label || len_le || value
+    let mut absorb = |label: &[u8], value: &[u8]| {
+        hash.update(label);
+        let len = (value.len() as u32).to_le_bytes();
+        hash.update(&len);
+        hash.update(value);
+    };
+
+    absorb(b"pw_hash", &pw_digest);
+    absorb(b"id_a_hash", &ida_digest);
+    absorb(b"id_b_hash", &idb_digest);
+    absorb(b"X", first_msg);
+    absorb(b"Y", second_msg);
+    absorb(b"K", key_bytes);
+
     hash.finalize().to_vec()
 }
 
@@ -220,7 +275,39 @@ pub fn hash_symmetric(
     }
     transcript[128..160].copy_from_slice(key_bytes);
 
+    // Build labeled, length-prefixed transcript for Symmetric flow.
     let mut hash = Sha256::new();
-    hash.update(transcript);
+    hash.update(b"spake2-conflux/transcript/symmetric/v1");
+
+    // Compute component digests.
+    let mut pw_hasher = Sha256::new();
+    pw_hasher.update(password_bytes);
+    let pw_digest = pw_hasher.finalize();
+
+    let mut ids_hasher = Sha256::new();
+    ids_hasher.update(id_s);
+    let ids_digest = ids_hasher.finalize();
+
+    // Canonical order for the two messages.
+    let (first, second) = if msg_u < msg_v {
+        (msg_u, msg_v)
+    } else {
+        (msg_v, msg_u)
+    };
+
+    // Helper to absorb label || len_le || value
+    let mut absorb = |label: &[u8], value: &[u8]| {
+        let len = (value.len() as u32).to_le_bytes();
+        hash.update(label);
+        hash.update(&len);
+        hash.update(value);
+    };
+
+    absorb(b"pw_hash", &pw_digest);
+    absorb(b"id_s_hash", &ids_digest);
+    absorb(b"msg_first", first);
+    absorb(b"msg_second", second);
+    absorb(b"K", key_bytes);
+
     hash.finalize().to_vec()
 }
