@@ -98,6 +98,9 @@ pub fn make_confirm_a_with_suite(
     ))
 }
 
+/// Convenience wrapper that computes the A->B confirmation tag using the crate’s
+/// default suite label. For explicit control over the suite label, use
+/// [`make_confirm_a_with_suite`].
 pub fn make_confirm_a(
     session_key: &SecretKey,
     x_msg: &[u8],
@@ -139,6 +142,9 @@ pub fn verify_confirm_a_with_suite(
     }
 }
 
+/// Convenience wrapper that verifies the A->B confirmation tag using the crate’s
+/// default suite label. For explicit control over the suite label, use
+/// [`verify_confirm_a_with_suite`].
 pub fn verify_confirm_a(
     session_key: &SecretKey,
     x_msg: &[u8],
@@ -183,6 +189,9 @@ pub fn make_confirm_b_with_suite(
     ))
 }
 
+/// Convenience wrapper that computes the B->A confirmation tag using the crate’s
+/// default suite label. For explicit control over the suite label, use
+/// [`make_confirm_b_with_suite`].
 pub fn make_confirm_b(
     session_key: &SecretKey,
     x_msg: &[u8],
@@ -224,6 +233,9 @@ pub fn verify_confirm_b_with_suite(
     }
 }
 
+/// Convenience wrapper that verifies the B->A confirmation tag using the crate’s
+/// default suite label. For explicit control over the suite label, use
+/// [`verify_confirm_b_with_suite`].
 pub fn verify_confirm_b(
     session_key: &SecretKey,
     x_msg: &[u8],
@@ -276,6 +288,9 @@ pub fn make_confirm_s_with_suite(
     ))
 }
 
+/// Convenience wrapper that computes a symmetric confirmation tag using the
+/// crate’s default suite label. For explicit control over the suite label, use
+/// [`make_confirm_s_with_suite`].
 pub fn make_confirm_s(
     session_key: &SecretKey,
     msg_u: &[u8],
@@ -320,6 +335,9 @@ pub fn verify_confirm_s_with_suite(
     }
 }
 
+/// Convenience wrapper that verifies a symmetric confirmation tag using the
+/// crate’s default suite label. For explicit control over the suite label, use
+/// [`verify_confirm_s_with_suite`].
 pub fn verify_confirm_s(
     session_key: &SecretKey,
     msg_u: &[u8],

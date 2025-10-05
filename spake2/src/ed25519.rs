@@ -168,6 +168,7 @@ fn ed25519_hash_to_scalar(s: &[u8]) -> c2_Scalar {
 }
 
 /// Hash `idA` and `idB` identities.
+#[allow(dead_code)]
 pub fn hash_ab(
     password_bytes: &[u8],
     id_a: &[u8],
@@ -239,6 +240,7 @@ pub fn hash_ab(
 }
 
 /// Hash symmetric identities.
+#[allow(dead_code)]
 pub fn hash_symmetric(
     password_bytes: &[u8],
     id_s: &[u8],
