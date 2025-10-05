@@ -5,7 +5,7 @@
 //! - These helpers compute and verify explicit confirmation tags that prove
 //!   both parties derived the same session key.
 //! - The confirmation MAC is computed as:
-//!     HMAC-SHA256(K, "spake2-conflux/confirm/v1" || role || transcript_parts)
+//!     HMAC-SHA256(K, suite_label || "/confirm/v1" || role || transcript_parts)
 //! - Role is one of: 'A', 'B', or 'S' (symmetric sub-roles 'U'/'V' are encoded in the body).
 //! - Transcript parts are constructed from the SPAKE2 exchange messages:
 //!     - For asymmetric A/B: X_msg || Y_msg (32 bytes each, compressed points).
@@ -39,8 +39,10 @@ pub const CONFIRM_TAG_LEN: usize = 32;
 /// Confirmation tag type alias (HMAC-SHA256 output).
 pub type ConfirmationTag = [u8; CONFIRM_TAG_LEN];
 
-/// Label providing domain separation for confirmation MACs.
-const CONFIRM_LABEL: &[u8] = b"spake2-conflux/confirm/v1";
+/// Suite label used for domain separation (default when a specific suite is not provided).
+const SUITE_LABEL_DEFAULT: &[u8] = b"spake2-conflux/ed25519/v1";
+/// Suffix appended to the suite label for confirmation MAC domain separation.
+const CONFIRM_SUFFIX: &[u8] = b"/confirm/v1";
 
 /// Role markers for asymmetric exchanges.
 const ROLE_A: u8 = b'A';
@@ -76,8 +78,9 @@ impl SymmetricRole {
 ///
 /// Output:
 /// - 32-byte HMAC-SHA256 confirmation tag to send to B.
-pub fn make_confirm_a(
+pub fn make_confirm_a_with_suite(
     session_key: &SecretKey,
+    suite_label: &str,
     x_msg: &[u8],
     y_msg: &[u8],
 ) -> Result<ConfirmationTag, Error> {
@@ -85,8 +88,27 @@ pub fn make_confirm_a(
     ensure_len_32(y_msg)?;
     Ok(hmac_sha256_multi(
         session_key.as_ref(),
-        &[CONFIRM_LABEL, &[ROLE_A], x_msg, y_msg],
+        &[
+            suite_label.as_bytes(),
+            CONFIRM_SUFFIX,
+            &[ROLE_A],
+            x_msg,
+            y_msg,
+        ],
     ))
+}
+
+pub fn make_confirm_a(
+    session_key: &SecretKey,
+    x_msg: &[u8],
+    y_msg: &[u8],
+) -> Result<ConfirmationTag, Error> {
+    make_confirm_a_with_suite(
+        session_key,
+        core::str::from_utf8(SUITE_LABEL_DEFAULT).unwrap_or("spake2-conflux/ed25519/v1"),
+        x_msg,
+        y_msg,
+    )
 }
 
 /// Verify confirmation tag purportedly created by side A.
@@ -99,8 +121,9 @@ pub fn make_confirm_a(
 ///
 /// Returns:
 /// - Ok(()) if valid, Error::WrongLength or Error::CorruptMessage otherwise.
-pub fn verify_confirm_a(
+pub fn verify_confirm_a_with_suite(
     session_key: &SecretKey,
+    suite_label: &str,
     x_msg: &[u8],
     y_msg: &[u8],
     received: &[u8],
@@ -108,12 +131,27 @@ pub fn verify_confirm_a(
     ensure_len_32(x_msg)?;
     ensure_len_32(y_msg)?;
     ensure_len_32(received)?;
-    let expected = make_confirm_a(session_key, x_msg, y_msg)?;
+    let expected = make_confirm_a_with_suite(session_key, suite_label, x_msg, y_msg)?;
     if ct_eq(&expected, received) {
         Ok(())
     } else {
         Err(Error::CorruptMessage)
     }
+}
+
+pub fn verify_confirm_a(
+    session_key: &SecretKey,
+    x_msg: &[u8],
+    y_msg: &[u8],
+    received: &[u8],
+) -> Result<(), Error> {
+    verify_confirm_a_with_suite(
+        session_key,
+        core::str::from_utf8(SUITE_LABEL_DEFAULT).unwrap_or("spake2-conflux/ed25519/v1"),
+        x_msg,
+        y_msg,
+        received,
+    )
 }
 
 /// Compute confirmation tag for side B.
@@ -125,8 +163,9 @@ pub fn verify_confirm_a(
 ///
 /// Output:
 /// - 32-byte HMAC-SHA256 confirmation tag to send to A.
-pub fn make_confirm_b(
+pub fn make_confirm_b_with_suite(
     session_key: &SecretKey,
+    suite_label: &str,
     x_msg: &[u8],
     y_msg: &[u8],
 ) -> Result<ConfirmationTag, Error> {
@@ -134,8 +173,27 @@ pub fn make_confirm_b(
     ensure_len_32(y_msg)?;
     Ok(hmac_sha256_multi(
         session_key.as_ref(),
-        &[CONFIRM_LABEL, &[ROLE_B], x_msg, y_msg],
+        &[
+            suite_label.as_bytes(),
+            CONFIRM_SUFFIX,
+            &[ROLE_B],
+            x_msg,
+            y_msg,
+        ],
     ))
+}
+
+pub fn make_confirm_b(
+    session_key: &SecretKey,
+    x_msg: &[u8],
+    y_msg: &[u8],
+) -> Result<ConfirmationTag, Error> {
+    make_confirm_b_with_suite(
+        session_key,
+        core::str::from_utf8(SUITE_LABEL_DEFAULT).unwrap_or("spake2-conflux/ed25519/v1"),
+        x_msg,
+        y_msg,
+    )
 }
 
 /// Verify confirmation tag purportedly created by side B.
@@ -148,8 +206,9 @@ pub fn make_confirm_b(
 ///
 /// Returns:
 /// - Ok(()) if valid, Error::WrongLength or Error::CorruptMessage otherwise.
-pub fn verify_confirm_b(
+pub fn verify_confirm_b_with_suite(
     session_key: &SecretKey,
+    suite_label: &str,
     x_msg: &[u8],
     y_msg: &[u8],
     received: &[u8],
@@ -157,12 +216,27 @@ pub fn verify_confirm_b(
     ensure_len_32(x_msg)?;
     ensure_len_32(y_msg)?;
     ensure_len_32(received)?;
-    let expected = make_confirm_b(session_key, x_msg, y_msg)?;
+    let expected = make_confirm_b_with_suite(session_key, suite_label, x_msg, y_msg)?;
     if ct_eq(&expected, received) {
         Ok(())
     } else {
         Err(Error::CorruptMessage)
     }
+}
+
+pub fn verify_confirm_b(
+    session_key: &SecretKey,
+    x_msg: &[u8],
+    y_msg: &[u8],
+    received: &[u8],
+) -> Result<(), Error> {
+    verify_confirm_b_with_suite(
+        session_key,
+        core::str::from_utf8(SUITE_LABEL_DEFAULT).unwrap_or("spake2-conflux/ed25519/v1"),
+        x_msg,
+        y_msg,
+        received,
+    )
 }
 
 /// Compute confirmation tag for the symmetric exchange.
@@ -179,8 +253,9 @@ pub fn verify_confirm_b(
 ///
 /// Output:
 /// - 32-byte HMAC-SHA256 confirmation tag.
-pub fn make_confirm_s(
+pub fn make_confirm_s_with_suite(
     session_key: &SecretKey,
+    suite_label: &str,
     msg_u: &[u8],
     msg_v: &[u8],
     sender_role: SymmetricRole,
@@ -191,13 +266,29 @@ pub fn make_confirm_s(
     Ok(hmac_sha256_multi(
         session_key.as_ref(),
         &[
-            CONFIRM_LABEL,
+            suite_label.as_bytes(),
+            CONFIRM_SUFFIX,
             &[ROLE_S],
             first,
             second,
             &[sender_role.as_byte()],
         ],
     ))
+}
+
+pub fn make_confirm_s(
+    session_key: &SecretKey,
+    msg_u: &[u8],
+    msg_v: &[u8],
+    sender_role: SymmetricRole,
+) -> Result<ConfirmationTag, Error> {
+    make_confirm_s_with_suite(
+        session_key,
+        core::str::from_utf8(SUITE_LABEL_DEFAULT).unwrap_or("spake2-conflux/ed25519/v1"),
+        msg_u,
+        msg_v,
+        sender_role,
+    )
 }
 
 /// Verify confirmation tag for the symmetric exchange.
@@ -210,8 +301,9 @@ pub fn make_confirm_s(
 ///
 /// Returns:
 /// - Ok(()) if valid, Error::WrongLength or Error::CorruptMessage otherwise.
-pub fn verify_confirm_s(
+pub fn verify_confirm_s_with_suite(
     session_key: &SecretKey,
+    suite_label: &str,
     msg_u: &[u8],
     msg_v: &[u8],
     sender_role: SymmetricRole,
@@ -220,12 +312,29 @@ pub fn verify_confirm_s(
     ensure_len_32(msg_u)?;
     ensure_len_32(msg_v)?;
     ensure_len_32(received)?;
-    let expected = make_confirm_s(session_key, msg_u, msg_v, sender_role)?;
+    let expected = make_confirm_s_with_suite(session_key, suite_label, msg_u, msg_v, sender_role)?;
     if ct_eq(&expected, received) {
         Ok(())
     } else {
         Err(Error::CorruptMessage)
     }
+}
+
+pub fn verify_confirm_s(
+    session_key: &SecretKey,
+    msg_u: &[u8],
+    msg_v: &[u8],
+    sender_role: SymmetricRole,
+    received: &[u8],
+) -> Result<(), Error> {
+    verify_confirm_s_with_suite(
+        session_key,
+        core::str::from_utf8(SUITE_LABEL_DEFAULT).unwrap_or("spake2-conflux/ed25519/v1"),
+        msg_u,
+        msg_v,
+        sender_role,
+        received,
+    )
 }
 
 /// Constant-time equality of two byte slices.

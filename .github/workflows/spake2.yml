@@ -55,6 +55,7 @@ jobs:
         with:
           tool: nextest
       - run: RUST_BACKTRACE=full cargo nextest run --all-targets --no-fail-fast
+      - run: cargo test --doc
 
   test-constant-time:
     runs-on: ubuntu-latest
@@ -72,3 +73,22 @@ jobs:
         with:
           tool: nextest
       - run: RUST_BACKTRACE=full cargo nextest run --all-targets --no-fail-fast --features constant-time
+
+  audit-provenance:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: Nextest with constants-provenance
+        run: RUST_BACKTRACE=full cargo nextest run --all-targets --no-fail-fast --features constants-provenance
+      - name: Nextest with constant-time + constants-provenance
+        run: RUST_BACKTRACE=full cargo nextest run --all-targets --no-fail-fast --features constant-time,constants-provenance

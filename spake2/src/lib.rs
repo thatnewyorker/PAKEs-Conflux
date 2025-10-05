@@ -41,15 +41,15 @@
 //! Thus a client-side program start with:
 //!
 //! ```rust
-//! use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
+//! use spake2_conflux::{RistrettoGroup, Identity, Password, Spake2};
 //! # fn send(msg: &[u8]) {}
-//! let (s1, outbound_msg) = Spake2::<Ed25519Group>::start_a(
+//! let (s1, outbound_msg) = Spake2::<RistrettoGroup>::start_a(
 //!    &Password::new(b"password"),
 //!    &Identity::new(b"client id string"),
-//!    &Identity::new(b"server id string"));
+//!    &Identity::new(b"server id string")).unwrap();
 //! send(&outbound_msg);
 //!
-//! # fn receive() -> Vec<u8> { let (s2, i2) = Spake2::<Ed25519Group>::start_b(&Password::new(b"password"), &Identity::new(b"client id string"), &Identity::new(b"server id string")); i2 }
+//! # fn receive() -> Vec<u8> { let (s2, i2) = Spake2::<RistrettoGroup>::start_b(&Password::new(b"password"), &Identity::new(b"client id string"), &Identity::new(b"server id string")).unwrap(); i2 }
 //! let inbound_msg = receive();
 //! let key1 = s1.finish(&inbound_msg).unwrap();
 //! ```
@@ -58,14 +58,14 @@
 //!
 //! ```rust
 //! # fn send(msg: &[u8]) {}
-//! use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
-//! let (s1, outbound_msg) = Spake2::<Ed25519Group>::start_b(
+//! use spake2_conflux::{RistrettoGroup, Identity, Password, Spake2};
+//! let (s1, outbound_msg) = Spake2::<RistrettoGroup>::start_b(
 //!    &Password::new(b"password"),
 //!    &Identity::new(b"client id string"),
-//!    &Identity::new(b"server id string"));
+//!    &Identity::new(b"server id string")).unwrap();
 //! send(&outbound_msg);
 //!
-//! # fn receive() -> Vec<u8> { let (s2, i2) = Spake2::<Ed25519Group>::start_a(&Password::new(b"password"), &Identity::new(b"client id string"), &Identity::new(b"server id string")); i2 }
+//! # fn receive() -> Vec<u8> { let (s2, i2) = Spake2::<RistrettoGroup>::start_a(&Password::new(b"password"), &Identity::new(b"client id string"), &Identity::new(b"server id string")).unwrap(); i2 }
 //! let inbound_msg = receive();
 //! let key2 = s1.finish(&inbound_msg).unwrap();
 //! ```
@@ -102,13 +102,13 @@
 //!
 //! ```rust
 //! # fn send(msg: &[u8]) {}
-//! use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
-//! let (s1, outbound_msg) = Spake2::<Ed25519Group>::start_symmetric(
+//! use spake2_conflux::{RistrettoGroup, Identity, Password, Spake2};
+//! let (s1, outbound_msg) = Spake2::<RistrettoGroup>::start_symmetric(
 //!    &Password::new(b"password"),
-//!    &Identity::new(b"shared id string"));
+//!    &Identity::new(b"shared id string")).unwrap();
 //! send(&outbound_msg);
 //!
-//! # fn receive() -> Vec<u8> { let (s2, i2) = Spake2::<Ed25519Group>::start_symmetric(&Password::new(b"password"), &Identity::new(b"shared id string")); i2 }
+//! # fn receive() -> Vec<u8> { let (s2, i2) = Spake2::<RistrettoGroup>::start_symmetric(&Password::new(b"password"), &Identity::new(b"shared id string")).unwrap(); i2 }
 //! let inbound_msg = receive();
 //! let key1 = s1.finish(&inbound_msg).unwrap();
 //! ```
@@ -117,13 +117,13 @@
 //!
 //! ```rust
 //! # fn send(msg: &[u8]) {}
-//! use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
-//! let (s1, outbound_msg) = Spake2::<Ed25519Group>::start_symmetric(
+//! use spake2_conflux::{RistrettoGroup, Identity, Password, Spake2};
+//! let (s1, outbound_msg) = Spake2::<RistrettoGroup>::start_symmetric(
 //!    &Password::new(b"password"),
-//!    &Identity::new(b"shared id string"));
+//!    &Identity::new(b"shared id string")).unwrap();
 //! send(&outbound_msg);
 //!
-//! # fn receive() -> Vec<u8> { let (s2, i2) = Spake2::<Ed25519Group>::start_symmetric(&Password::new(b"password"), &Identity::new(b"shared id string")); i2 }
+//! # fn receive() -> Vec<u8> { let (s2, i2) = Spake2::<RistrettoGroup>::start_symmetric(&Password::new(b"password"), &Identity::new(b"shared id string")).unwrap(); i2 }
 //! let inbound_msg = receive();
 //! let key1 = s1.finish(&inbound_msg).unwrap();
 //! ```
@@ -178,8 +178,9 @@
 //!
 //! SPAKE2 consists of two phases, separated by a single message exchange.
 //! The time these phases take is split roughly 50/50. On my 2.8GHz Core-i7
-//! (i7-7600U) cpu, the built-in Ed25519Group parameters take about 112
-//! microseconds for each phase, and the message exchanged is 33 bytes long.
+//! (i7-7600U) cpu, historical measurements for Ed25519Group were about 112
+//! microseconds per phase with a 33-byte message.
+//! For new deployments, RistrettoGroup is the recommended default; performance is comparable in most settings, but wire encodings and constants differ.
 //!
 //! # Testing
 //!
@@ -235,6 +236,8 @@ pub mod constants;
 mod ed25519;
 mod error;
 mod group;
+mod ristretto;
+mod transcript;
 
 use secret_utils::wrappers::SecretKey;
 use zeroize::Zeroize;
@@ -243,6 +246,7 @@ pub use self::{
     ed25519::Ed25519Group,
     error::{Error, Result},
     group::Group,
+    ristretto::RistrettoGroup,
 };
 
 use alloc::vec::Vec;
@@ -457,7 +461,8 @@ impl<G: Group> Spake2<G> {
         // note that both sides must use the same order
 
         Ok(SecretKey::from(match self.side {
-            Side::A { id_a, id_b } => ed25519::hash_ab(
+            Side::A { id_a, id_b } => transcript::hash_ab_suited(
+                G::suite_label(),
                 self.password_vec.as_ref(),
                 &id_a,
                 &id_b,
@@ -465,7 +470,8 @@ impl<G: Group> Spake2<G> {
                 &msg2[1..],
                 &key_bytes,
             ),
-            Side::B { id_a, id_b } => ed25519::hash_ab(
+            Side::B { id_a, id_b } => transcript::hash_ab_suited(
+                G::suite_label(),
                 self.password_vec.as_ref(),
                 &id_a,
                 &id_b,
@@ -473,7 +479,8 @@ impl<G: Group> Spake2<G> {
                 self.msg1.as_slice(),
                 &key_bytes,
             ),
-            Side::Symmetric { id_s } => ed25519::hash_symmetric(
+            Side::Symmetric { id_s } => transcript::hash_symmetric_suited(
+                G::suite_label(),
                 self.password_vec.as_ref(),
                 &id_s,
                 &self.msg1,

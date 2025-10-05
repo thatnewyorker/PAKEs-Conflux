@@ -13,6 +13,8 @@
 //!   produced by `element_to_bytes` and accepted by `bytes_to_element`.
 //! - `random_scalar` MUST be fallible and return `Error::Rng` on RNG failure.
 //!   Implementations must not panic on RNG errors.
+//! - `suite_label` MUST return a stable identifier used for domain separation
+//!   of transcripts and confirmation MACs. It must be unique per backend.
 //!
 //! These requirements ensure that protocol code can rely on backends to enforce
 //! security-critical validation uniformly.
@@ -33,7 +35,13 @@ pub trait Group {
     /// Transcript hash
     type TranscriptHash;
 
-    /// Name
+    /// Suite label identifying the group/suite for domain separation.
+    ///
+    /// This value MUST be used to domain-separate transcripts and confirmation MACs.
+    /// Example: "spake2-conflux/ristretto/v1" or "spake2-conflux/ed25519/v1".
+    fn suite_label() -> &'static str;
+
+    /// Human-readable name of the group (informational).
     fn name() -> &'static str;
 
     /// `m` constant

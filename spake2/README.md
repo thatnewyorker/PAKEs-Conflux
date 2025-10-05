@@ -11,6 +11,8 @@ Pure Rust implementation of the [SPAKE2] password-authenticated key-exchange alg
 
 [Documentation][docs-link]
 
+Compatibility note: As of 0.6.0, this crate’s docs and examples use RistrettoGroup by default. If you must remain on Ed25519 for wire-compatibility with legacy peers, see [MIGRATION.md](MIGRATION.md) for step-by-step instructions to explicitly select `Ed25519Group` and coordinate upgrades.
+
 ## About
 
 This library implements the SPAKE2 password-authenticated key exchange
@@ -32,16 +34,13 @@ The protocol requires the exchange of one pair of messages, so only one round
 trip is necessary to establish the session key. If key-confirmation is
 necessary, that will require a second round trip.
 
-All messages are bytestrings. For the default security level (using the
-Ed25519 elliptic curve, roughly equivalent to an 128-bit symmetric key), the
-message is 33 bytes long.
+All messages are bytestrings. Message sizes depend on the selected suite; for the provided Ed25519 and Ristretto suites they are 33 bytes (1 role byte + 32-byte element).
 
 This implementation is generic over a `Group`, which defines the cyclic
 group to use, the functions which convert group elements and scalars to
 and from bytestrings, and the three distinctive group elements used in
-the blinding process. Only one such Group is implemented, named
-`Ed25519Group`, which provides fast operations and high security, and is
-compatible with my [python implementation](https://github.com/warner/python-spake2).
+the blinding process. Two groups are implemented:
+`RistrettoGroup` (recommended default for new deployments) and `Ed25519Group` (available for explicit, legacy interoperability). Note that suites have different encodings and constants and are not wire-compatible.
 
 ## SecretKey usage (session key handling)
 
@@ -181,7 +180,7 @@ Recommended flow:
 Asymmetric A/B example:
 
 ```rust
-use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
+use spake2_conflux::{Identity, Password, RistrettoGroup, Spake2};
 use spake2_conflux::confirm::{make_confirm_a, make_confirm_b, verify_confirm_a, verify_confirm_b};
 
 let pw = Password::new(b"correct horse battery staple");
@@ -189,10 +188,10 @@ let id_a = Identity::new(b"client@example.com");
 let id_b = Identity::new(b"server.example.com");
 
 // A creates X
-let (s_a, msg_a) = Spake2::<Ed25519Group>::start_a(&pw, &id_a, &id_b).unwrap();
+let (s_a, msg_a) = Spake2::<RistrettoGroup>::start_a(&pw, &id_a, &id_b).unwrap();
 
 // B creates Y
-let (s_b, msg_b) = Spake2::<Ed25519Group>::start_b(&pw, &id_a, &id_b).unwrap();
+let (s_b, msg_b) = Spake2::<RistrettoGroup>::start_b(&pw, &id_a, &id_b).unwrap();
 
 // Each side derives its session key
 let key_a = s_a.finish(&msg_b).unwrap();

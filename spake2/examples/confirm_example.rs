@@ -1,5 +1,5 @@
 /*!
-A/B key-confirmation example for SPAKE2 (Ed25519).
+A/B key-confirmation example for SPAKE2 (Ristretto).
 
 This example demonstrates:
 - Running the SPAKE2 handshake for roles A and B.
@@ -11,7 +11,7 @@ Run:
 */
 
 use spake2_conflux::confirm::{make_confirm_a, make_confirm_b, verify_confirm_a, verify_confirm_b};
-use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
+use spake2_conflux::{Identity, Password, RistrettoGroup, Spake2};
 
 fn main() {
     // Shared password and identity strings agreed by both sides in advance.
@@ -21,11 +21,11 @@ fn main() {
 
     // A-side: create first message (X)
     let (s_a, msg_a) =
-        Spake2::<Ed25519Group>::start_a(&pw, &id_a, &id_b).expect("A-side start failed");
+        Spake2::<RistrettoGroup>::start_a(&pw, &id_a, &id_b).expect("A-side start failed");
 
     // B-side: create second message (Y)
     let (s_b, msg_b) =
-        Spake2::<Ed25519Group>::start_b(&pw, &id_a, &id_b).expect("B-side start failed");
+        Spake2::<RistrettoGroup>::start_b(&pw, &id_a, &id_b).expect("B-side start failed");
 
     // Each side "receives" the peer message and finishes to derive its session key.
     // In a real application, msg_a and msg_b would be exchanged over the network.

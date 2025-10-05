@@ -20,6 +20,10 @@ impl Group for Ed25519Group {
     type Element = c2_Element;
     type TranscriptHash = Sha256;
 
+    fn suite_label() -> &'static str {
+        "spake2-conflux/ed25519/v1"
+    }
+
     fn name() -> &'static str {
         "Ed25519"
     }

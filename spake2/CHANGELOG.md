@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0/).
 
+## 0.6.0
+### Breaking Changes
+- Ristretto is now the recommended default for new deployments; crate-level docs and examples show `RistrettoGroup` as the canonical usage.
+- Wire encodings and distinguished constants differ between Ristretto and Ed25519; they are not interoperable. Mixed deployments must coordinate suite selection.
+- Downstreams relying on implicit Ed25519 behavior must explicitly select `Ed25519Group` to preserve prior behavior.
+
+### Changed
+- Documentation and README updated to Ristretto-first guidance; Ed25519 remains available for explicit selection.
+- Examples updated to use `RistrettoGroup` in A/B and symmetric flows; doctests adjusted accordingly.
+
+### Added
+- Ristretto-focused integration tests covering A/B, symmetric, confirmation round-trips, and invalid encoding rejection.
+- Provenance tests for Ristretto constants run by default; Ed25519 provenance remains behind the `constants-provenance` feature gate.
+- CI workflow validates Ristretto by default with nextest, with optional jobs for `constant-time` and `constants-provenance`.
+
+### Migration
+- To adopt the recommended default, set `spake2-conflux = "^0.6.0"` in your Cargo.toml.
+- If you need to retain Ed25519 behavior and wire format, explicitly import and use `Ed25519Group` and coordinate with peers on the selected suite.
+
 ## Unreleased
 ### Changed
 - Session key handling: session keys are now returned as `secret_utils::wrappers::SecretKey` with zeroization-on-drop and redacted Debug. Borrow bytes via `AsRef<[u8]>`/deref.

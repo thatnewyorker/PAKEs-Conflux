@@ -1,4 +1,4 @@
-//! Deterministic derivation of SPAKE2 distinguished constants (M, N, S) for Ed25519.
+//! Deterministic derivation of SPAKE2 distinguished constants (M, N, S) for Ed25519 and Ristretto.
 //!
 //! This module provides library APIs to derive the compressed Edwards-Y encodings
 //! of the SPAKE2 distinguished group elements M, N, and S using a deterministic,
@@ -35,12 +35,19 @@ extern crate alloc;
 
 use crate::error::{Error, Result};
 use alloc::vec::Vec;
-use curve25519_dalek::{edwards::CompressedEdwardsY, traits::IsIdentity};
+use curve25519_dalek::{
+    edwards::CompressedEdwardsY, ristretto::RistrettoPoint, traits::IsIdentity,
+};
 use hkdf::Hkdf;
 use sha2::{Digest, Sha256};
 
-/// Suite label used as part of the IKM (input keying material).
+/// Suite labels used as part of the IKM (input keying material).
+/// SUITE_LABEL is retained for backward compatibility and refers to the Ed25519 suite.
 pub const SUITE_LABEL: &[u8] = b"spake2-conflux/ed25519/v1";
+/// Explicit Ed25519 suite label.
+pub const ED25519_SUITE_LABEL: &[u8] = b"spake2-conflux/ed25519/v1";
+/// Ristretto suite label.
+pub const RISTRETTO_SUITE_LABEL: &[u8] = b"spake2-conflux/ristretto/v1";
 
 /// HKDF info label for deterministic constant derivation.
 pub const DERIVATION_LABEL: &[u8] = b"spake2-conflux/derive-constant/v1";
@@ -110,4 +117,46 @@ pub fn derive_n() -> Result<([u8; 32], u32)> {
 /// Derive the S constant (compressed Edwards-Y) and its counter.
 pub fn derive_s() -> Result<([u8; 32], u32)> {
     derive_constant("S")
+}
+
+/// Derive the canonical 32-byte compressed Ristretto encoding for a named constant.
+///
+/// - `name` must be one of: "M", "N", "S".
+/// - Returns the compressed bytes and a counter value (always 0 for Ristretto).
+///
+/// Notes:
+/// - Ristretto uses a uniform 64-byte input, so no iteration is required.
+/// - This function is suite-aware and uses the Ristretto suite label.
+pub fn derive_constant_ristretto(name: &str) -> Result<([u8; 32], u32)> {
+    // Build IKM = RISTRETTO_SUITE_LABEL || 0x00 || name (ASCII).
+    let mut ikm = Vec::with_capacity(RISTRETTO_SUITE_LABEL.len() + 1 + name.len());
+    ikm.extend_from_slice(RISTRETTO_SUITE_LABEL);
+    ikm.push(0x00);
+    ikm.extend_from_slice(name.as_bytes());
+
+    // HKDF-SHA256 with empty-salt to derive a 64-byte uniform seed for Ristretto mapping.
+    let hk = Hkdf::<Sha256>::new(Some(b""), &ikm);
+    let mut seed = [0u8; 64];
+    hk.expand(DERIVATION_LABEL, &mut seed)
+        .map_err(|_| Error::CorruptMessage)?;
+
+    // Map to a Ristretto point and return canonical compressed encoding.
+    let point = RistrettoPoint::from_uniform_bytes(&seed);
+    let out = point.compress().to_bytes();
+    Ok((out, 0))
+}
+
+/// Derive the M constant (compressed Ristretto) and its counter (0).
+pub fn derive_m_ristretto() -> Result<([u8; 32], u32)> {
+    derive_constant_ristretto("M")
+}
+
+/// Derive the N constant (compressed Ristretto) and its counter (0).
+pub fn derive_n_ristretto() -> Result<([u8; 32], u32)> {
+    derive_constant_ristretto("N")
+}
+
+/// Derive the S constant (compressed Ristretto) and its counter (0).
+pub fn derive_s_ristretto() -> Result<([u8; 32], u32)> {
+    derive_constant_ristretto("S")
 }
