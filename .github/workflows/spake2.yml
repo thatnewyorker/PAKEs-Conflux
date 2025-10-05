@@ -51,5 +51,24 @@ jobs:
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
-      - run: cargo test --release
-      - run: cargo test --release --all-features
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - run: RUST_BACKTRACE=full cargo nextest run --all-targets --no-fail-fast
+
+  test-constant-time:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.89.0 # MSRV
+          - stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - run: RUST_BACKTRACE=full cargo nextest run --all-targets --no-fail-fast --features constant-time

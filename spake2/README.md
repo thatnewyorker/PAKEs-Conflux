@@ -168,3 +168,95 @@ dual licensed as above, without any additional terms or conditions.
 
 [RustCrypto]: https://github.com/RustCrypto
 [SPAKE2]: https://tools.ietf.org/id/draft-irtf-cfrg-spake2-10.html
+
+## Key Confirmation
+
+To detect MITM and key mismatches, perform an explicit, authenticated key-confirmation exchange after both sides call `finish()`.
+
+Recommended flow:
+1) Run SPAKE2 handshake (A/B or symmetric) and call `finish()` to derive the session key on each side.
+2) Exchange confirmation tags computed over the canonical transcript bytes (the 32-byte SPAKE2 messages).
+3) Only mark the session as authenticated if both confirmation verifications succeed.
+
+Asymmetric A/B example:
+
+```rust
+use spake2_conflux::{Ed25519Group, Identity, Password, Spake2};
+use spake2_conflux::confirm::{make_confirm_a, make_confirm_b, verify_confirm_a, verify_confirm_b};
+
+let pw = Password::new(b"correct horse battery staple");
+let id_a = Identity::new(b"client@example.com");
+let id_b = Identity::new(b"server.example.com");
+
+// A creates X
+let (s_a, msg_a) = Spake2::<Ed25519Group>::start_a(&pw, &id_a, &id_b).unwrap();
+
+// B creates Y
+let (s_b, msg_b) = Spake2::<Ed25519Group>::start_b(&pw, &id_a, &id_b).unwrap();
+
+// Each side derives its session key
+let key_a = s_a.finish(&msg_b).unwrap();
+let key_b = s_b.finish(&msg_a).unwrap();
+
+// Canonical transcript parts (strip the first 'side' byte)
+let x = &msg_a[1..]; // 32 bytes
+let y = &msg_b[1..]; // 32 bytes
+
+// A -> B confirmation
+let tag_a = make_confirm_a(&key_a, x, y).unwrap();
+verify_confirm_a(&key_b, x, y, &tag_a).unwrap();
+
+// B -> A confirmation
+let tag_b = make_confirm_b(&key_b, x, y).unwrap();
+verify_confirm_b(&key_a, x, y, &tag_b).unwrap();
+
+// Both verifications succeeded: session is authenticated.
+```
+
+Notes:
+- The confirmation helpers compute HMAC-SHA256 over a domain-separated label and the transcript bytes to bind the returned tag to the exact SPAKE2 exchange.
+- Verification uses a constant-time comparison to avoid timing oracles on MAC tags.
+- If any verification fails, treat the session as unauthenticated and abort.
+
+Symmetric roles are supported via `make_confirm_s` / `verify_confirm_s` with an explicit sender role marker.
+
+## Threat Model and Constant-Time
+
+Attacker capabilities:
+- Remote network attacker: can observe, replay, and inject messages but cannot measure fine-grained local timing with precision.
+- Local/co-resident attacker: may be able to measure microarchitectural timing or cache effects.
+
+What this crate does:
+- Group validation: the Ed25519 backend rejects invalid encodings, identity, and small-order points to prevent degenerate shared secrets.
+- Key confirmation: explicit confirmation tags are provided to detect MITM and accidental misconfigurations.
+- Constant-time options: critical comparisons in confirmation verification are performed without early returns, and when the `constant-time` feature is enabled, 32-byte comparisons use constant-time primitives.
+- RNG handling: public constructors are fallible; RNG failures return `Error::Rng` instead of panicking.
+
+Out of scope:
+- Hardware side-channels and speculative-execution leaks.
+- Full constant-timeness of all operations in all environments.
+
+Guidance:
+- Enable the `constant-time` feature when attackers can perform fine-grained timing (e.g., co-resident adversaries) or when you want to minimize timing channels at the cost of some performance.
+- Always perform the key-confirmation step in production to defend against undetected MITM and mismatched keys.
+- Normalize peer-facing errors (e.g., map parse/validation failures to a single error) to avoid providing oracle information in network protocols.
+
+## Group Validation
+
+- The `Group` trait contract requires strict validation in `bytes_to_element`: reject non-canonical encodings, the identity element, and any small-order/cofactor points. Implementations must never panic on malformed input.
+- The Ed25519 backend enforces these checks and `Spake2::finish` performs a canonical round-trip re-encoding as defense-in-depth.
+- These validations are always enabled; no feature flag is required.
+- Negative tests under `spake2/tests/security.rs` exercise identity and small-order encodings and expect `Error::CorruptMessage`.
+
+## Deterministic Constants and Provenance
+
+This crate includes a deterministic, auditable procedure to derive SPAKE2 distinguished elements (M, N, S) for Ed25519:
+
+- Suite: "spake2-conflux/ed25519/v1"
+- Label: "spake2-conflux/derive-constant/v1"
+- Procedure: HKDF-SHA256(seed from suite||0x00||name) → iterate SHA-256(seed||counter_le) until a decompressible, non-identity, non-small-order point is found; use its canonical compressed Edwards-Y bytes.
+
+Tooling and features:
+- CLI: `cargo run --bin derive_constants` prints bytes and counters for selected names.
+- Provenance tests (optional): `cargo test --features constants-provenance` asserts that embedded constants match the derivation output. Enable this feature when you intend to standardize on deterministic constants and want CI/audit checks.
+- Migration note: embedded constants are historically sourced for compatibility; the deterministic derivation may yield different values. If you plan to migrate, coordinate a protocol versioning strategy and update peers accordingly.
